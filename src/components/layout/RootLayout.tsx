@@ -2,12 +2,10 @@ import { Toaster } from "@/components/ui/sonner";
 import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
 import Sidebar from "./Sidebar/Sidebar";
 import Header from "./Header";
-import ProposalList from "../dashboard/ProposalList";
-import ConnectWallet from "../dashboard/ConnectWallet";
-import InvestmentPeriod from "../dashboard/InvestmentPeriod";
 import { Outlet } from "@tanstack/react-router";
 import { ThemeProvider } from "../ThemeProvider";
-import ProposalDetails from "../dashboard/ProposalDetails";
+import ConnectWallet from "../dashboard/ConnectWallet";
+import InvestmentPeriod from "../dashboard/InvestmentPeriod";
 
 const RootLayout = () => {
 	return (
@@ -23,10 +21,8 @@ const RootLayout = () => {
 
 					{/* Main Content */}
 					<main className="flex-1 p-6 flex">
-						{/* Left Content */}
+						{/* Left Content - Main Route Content */}
 						<div className="flex-1">
-							<ProposalList />
-							<ProposalDetails />
 							<Outlet />
 						</div>
 

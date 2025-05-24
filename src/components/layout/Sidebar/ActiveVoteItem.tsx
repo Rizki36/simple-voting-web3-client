@@ -1,52 +1,38 @@
-type VoteBackgroundColor = "bg-blue-600" | "bg-orange-600" | "bg-purple-600";
+import { Link } from "@tanstack/react-router";
 
-type ActiveVoteItemProps = {
+type ActiveVoteProps = {
 	index: number;
-	onClick?: () => void;
 };
 
-const getBackgroundColor = (index: number): VoteBackgroundColor => {
-	switch (index % 3) {
-		case 0:
-			return "bg-blue-600";
-		case 1:
-			return "bg-orange-600";
-		case 2:
-			return "bg-purple-600";
-		default:
-			return "bg-blue-600";
-	}
-};
-
-const ActiveVoteItem = ({ index, onClick }: ActiveVoteItemProps) => {
-	const handleKeyDown = (e: React.KeyboardEvent) => {
-		if (e.key === "Enter" || e.key === " ") {
-			e.preventDefault();
-			onClick?.();
+const ActiveVoteItem = ({ index }: ActiveVoteProps) => {
+	const getBackgroundColor = () => {
+		switch (index % 3) {
+			case 0:
+				return "bg-blue-600";
+			case 1:
+				return "bg-orange-600";
+			default:
+				return "bg-purple-600";
 		}
 	};
 
-	const bgColorClass = getBackgroundColor(index - 1);
-
 	return (
-		<button
-			type="button"
-			className="flex items-center gap-3 w-full text-left"
-			tabIndex={0}
-			onClick={onClick}
-			onKeyDown={handleKeyDown}
+		<Link
+			// Replace with the correct path
+			to="/my-votes"
+			className="flex items-center gap-3 px-4 py-2 hover:bg-slate-800/50 rounded-md"
 			aria-label={`Vote #${index} details`}
 		>
 			<div
-				className={`w-6 h-6 rounded-full ${bgColorClass} flex items-center justify-center text-xs`}
+				className={`w-6 h-6 rounded-full ${getBackgroundColor()} flex items-center justify-center text-xs`}
 			>
 				{index}
 			</div>
-			<div className="flex-1">
+			<div className="flex-1 md:block sm:hidden xs:hidden">
 				<div className="text-sm">Vote #{index}</div>
 				<div className="text-xs text-slate-400">Cast {index} day ago</div>
 			</div>
-		</button>
+		</Link>
 	);
 };
 
