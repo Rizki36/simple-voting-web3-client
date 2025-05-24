@@ -1,5 +1,5 @@
 import SidebarItem from "./SidebarItem";
-import { useRouter, Link, useRouterState } from "@tanstack/react-router";
+import { Link, useRouterState } from "@tanstack/react-router";
 import {
 	LayoutDashboard,
 	FileText,
@@ -76,7 +76,7 @@ const Sidebar = () => {
 	};
 
 	return (
-		<aside className="w-60 md:w-60 sm:w-16 xs:w-16 bg-slate-950 border-r border-slate-800 flex flex-col">
+		<aside className="h-full w-60 md:w-60 sm:w-16 xs:w-16 bg-slate-950 border-r border-slate-800 flex flex-col">
 			{/* Logo */}
 			<div className="p-4 flex items-center gap-2">
 				<Link
