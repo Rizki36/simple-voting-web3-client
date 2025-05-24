@@ -11,6 +11,7 @@
 - Tanstack router
 - Tanstack query
 - Tanstack table
+- Appkit
 
 ## Features
 
