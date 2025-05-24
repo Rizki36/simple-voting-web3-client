@@ -1,13 +1,23 @@
-import { Search, Settings, Plus } from "lucide-react";
+import { Search, Settings, Plus, Copy, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
+import { useAppKitAccount } from "@reown/appkit/react";
+import { useState } from "react";
+import {
+	Tooltip,
+	TooltipContent,
+	TooltipProvider,
+	TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 type HeaderProps = {
 	className?: string;
 };
 
 const Header = ({ className }: HeaderProps) => {
+	const { address, isConnected } = useAppKitAccount();
+	const [copied, setCopied] = useState(false);
+
 	const handleCreateProposal = () => {
 		console.log("Create proposal clicked");
 	};
@@ -20,6 +30,14 @@ const Header = ({ className }: HeaderProps) => {
 		console.log("Settings clicked");
 	};
 
+	const handleCopyAddress = () => {
+		if (address) {
+			navigator.clipboard.writeText(address);
+			setCopied(true);
+			setTimeout(() => setCopied(false), 2000);
+		}
+	};
+
 	return (
 		<header
 			className={cn(
@@ -28,22 +46,39 @@ const Header = ({ className }: HeaderProps) => {
 			)}
 		>
 			<div className="flex items-center gap-2">
-				<span className="text-sm text-slate-400 hidden md:inline">
-					Connected to
-				</span>
-				<div className="flex items-center gap-1 bg-slate-800/50 px-2 py-1 rounded-lg">
-					<Avatar className="w-6 h-6">
-						<AvatarImage
-							src="https://github.com/shadcn.png"
-							alt="User avatar"
-						/>
-						<AvatarFallback>JD</AvatarFallback>
-					</Avatar>
-					<span className="text-sm font-medium hidden sm:inline">
-						Irvin Crawford
-					</span>
-					<span className="text-xs text-slate-400 hidden sm:inline">•</span>
-				</div>
+				{isConnected && address && (
+					<>
+						<span className="text-sm text-slate-400 hidden md:inline">
+							Connected to
+						</span>
+						<div className="flex items-center gap-1 bg-slate-800/50 px-2 py-1 rounded-lg">
+							<span className="text-sm font-medium hidden sm:inline">
+								{address.slice(0, 4)}...{address.slice(-4)}
+							</span>
+							<TooltipProvider>
+								<Tooltip>
+									<TooltipTrigger asChild>
+										<Button
+											variant="ghost"
+											size="icon"
+											className="h-6 w-6 p-0 ml-1 hover:bg-slate-700"
+											onClick={handleCopyAddress}
+										>
+											{copied ? (
+												<Check className="h-3 w-3 text-green-400" />
+											) : (
+												<Copy className="h-3 w-3" />
+											)}
+										</Button>
+									</TooltipTrigger>
+									<TooltipContent side="bottom">
+										<p>{copied ? "Copied!" : "Copy address"}</p>
+									</TooltipContent>
+								</Tooltip>
+							</TooltipProvider>
+						</div>
+					</>
+				)}
 			</div>
 
 			<div className="flex items-center gap-2 md:gap-4">

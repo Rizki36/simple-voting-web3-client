@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button";
+import ConnectButton from "./ConnectButton";
 
 const ConnectWallet = () => {
 	return (
@@ -23,9 +24,7 @@ const ConnectWallet = () => {
 				Liquid Staking
 			</p>
 
-			<Button className="w-full mb-3" variant="outline">
-				Connect with Wallet
-			</Button>
+			<ConnectButton />
 
 			<Button className="w-full" variant="ghost">
 				Enter a Wallet Address
