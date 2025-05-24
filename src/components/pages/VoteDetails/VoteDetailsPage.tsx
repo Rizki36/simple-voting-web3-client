@@ -1,7 +1,9 @@
 import { useMatch } from "@tanstack/react-router";
 
 const VoteDetailsPage = () => {
-	const { params } = useMatch("/vote/$voteId");
+	const { params } = useMatch({
+		from: "/vote/$voteId",
+	});
 	const voteId = params.voteId;
 
 	return (

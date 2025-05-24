@@ -19,7 +19,8 @@ const ActiveVoteItem = ({ index }: ActiveVoteProps) => {
 	return (
 		<Link
 			// Replace with the correct path
-			to="/my-votes"
+			to="/vote/$voteId"
+			params={{ voteId: index.toString() }}
 			className="flex items-center gap-3 px-4 py-2 hover:bg-slate-800/50 rounded-md"
 			aria-label={`Vote #${index} details`}
 		>
