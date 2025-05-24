@@ -1,7 +1,20 @@
-import { Button } from "@/components/ui/button";
+import { useState } from "react";
 import ProposalCard from "./ProposalCard";
+import FilterButton from "./FilterButton";
 
-const proposalData = [
+type ChangeColorType = "green" | "red";
+
+type ProposalData = {
+	title: string;
+	percentage: string;
+	change: string;
+	changeColor: ChangeColorType;
+	value: string;
+};
+
+type FilterType = "24H" | "Result of Vote" | "Date";
+
+const proposalData: ProposalData[] = [
 	{
 		title: "Ethereum (ETH)",
 		percentage: "13.62%",
@@ -26,38 +39,46 @@ const proposalData = [
 ];
 
 const ProposalList = () => {
+	const [activeFilter, setActiveFilter] = useState<FilterType>("24H");
+
+	const handleFilterClick = (filterType: FilterType) => {
+		setActiveFilter(filterType);
+	};
+
+	const handleProposalClick = (index: number) => {
+		console.log(`Clicked proposal ${index}: ${proposalData[index].title}`);
+	};
+
 	return (
 		<div>
 			{/* Top section - Heading & Filters */}
-			<div className="flex justify-between items-center mb-6">
+			<div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 sm:mb-6 gap-4">
 				<div>
-					<h2 className="text-2xl font-medium">Top Active Proposals</h2>
+					<h2 className="text-xl sm:text-2xl font-medium">
+						Top Active Proposals
+					</h2>
 				</div>
-				<div className="flex gap-2">
-					<Button size="sm" variant="outline" className="rounded-full text-xs">
-						24H
-					</Button>
-					<Button
-						size="sm"
-						variant="outline"
-						className="rounded-full border-slate-700 text-xs"
-					>
-						Result of Vote
-					</Button>
-					<Button
-						size="sm"
-						variant="outline"
-						className="rounded-full border-slate-700 text-xs"
-					>
-						Date
-					</Button>
+				<div className="flex flex-wrap gap-2">
+					{["24H", "Result of Vote", "Date"].map((filterType) => (
+						<FilterButton
+							key={filterType}
+							label={filterType}
+							active={activeFilter === filterType}
+							onClick={() => handleFilterClick(filterType as FilterType)}
+						/>
+					))}
 				</div>
 			</div>
 
-			{/* Proposal Cards Grid */}
-			<div className="grid grid-cols-3 gap-4">
+			{/* Proposal Cards Grid - Responsive */}
+			<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
 				{proposalData.map((card, index) => (
-					<ProposalCard key={index} {...card} index={index} />
+					<ProposalCard
+						key={index}
+						{...card}
+						index={index}
+						onClick={() => handleProposalClick(index)}
+					/>
 				))}
 			</div>
 		</div>

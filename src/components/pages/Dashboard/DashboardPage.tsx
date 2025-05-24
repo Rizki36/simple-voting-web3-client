@@ -3,9 +3,9 @@ import ProposalDetails from "../../dashboard/ProposalDetails";
 
 const DashboardPage = () => {
 	return (
-		<div className="p-6">
-			<h1 className="text-2xl font-bold mb-6">Dashboard</h1>
-			<div>
+		<div>
+			<h1 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6">Dashboard</h1>
+			<div className="space-y-4 sm:space-y-8">
 				<ProposalList />
 				<ProposalDetails />
 			</div>
