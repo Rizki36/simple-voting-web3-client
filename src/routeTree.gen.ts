@@ -11,22 +11,17 @@
 // Import Routes
 
 import { Route as rootRoute } from './routes/__root'
-import { Route as ProposalsImport } from './routes/proposals'
 import { Route as MyVotesImport } from './routes/my-votes'
 import { Route as CreateProposalImport } from './routes/create-proposal'
 import { Route as ApiImport } from './routes/api'
 import { Route as AnalyticsImport } from './routes/analytics'
 import { Route as ActiveVotesImport } from './routes/active-votes'
 import { Route as IndexImport } from './routes/index'
+import { Route as ProposalsIndexImport } from './routes/proposals.index'
 import { Route as VoteVoteIdImport } from './routes/vote.$voteId'
+import { Route as ProposalsProposalIdImport } from './routes/proposals.$proposalId'
 
 // Create/Update Routes
-
-const ProposalsRoute = ProposalsImport.update({
-  id: '/proposals',
-  path: '/proposals',
-  getParentRoute: () => rootRoute,
-} as any)
 
 const MyVotesRoute = MyVotesImport.update({
   id: '/my-votes',
@@ -64,9 +59,21 @@ const IndexRoute = IndexImport.update({
   getParentRoute: () => rootRoute,
 } as any)
 
+const ProposalsIndexRoute = ProposalsIndexImport.update({
+  id: '/proposals/',
+  path: '/proposals/',
+  getParentRoute: () => rootRoute,
+} as any)
+
 const VoteVoteIdRoute = VoteVoteIdImport.update({
   id: '/vote/$voteId',
   path: '/vote/$voteId',
+  getParentRoute: () => rootRoute,
+} as any)
+
+const ProposalsProposalIdRoute = ProposalsProposalIdImport.update({
+  id: '/proposals/$proposalId',
+  path: '/proposals/$proposalId',
   getParentRoute: () => rootRoute,
 } as any)
 
@@ -116,11 +123,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MyVotesImport
       parentRoute: typeof rootRoute
     }
-    '/proposals': {
-      id: '/proposals'
-      path: '/proposals'
-      fullPath: '/proposals'
-      preLoaderRoute: typeof ProposalsImport
+    '/proposals/$proposalId': {
+      id: '/proposals/$proposalId'
+      path: '/proposals/$proposalId'
+      fullPath: '/proposals/$proposalId'
+      preLoaderRoute: typeof ProposalsProposalIdImport
       parentRoute: typeof rootRoute
     }
     '/vote/$voteId': {
@@ -128,6 +135,13 @@ declare module '@tanstack/react-router' {
       path: '/vote/$voteId'
       fullPath: '/vote/$voteId'
       preLoaderRoute: typeof VoteVoteIdImport
+      parentRoute: typeof rootRoute
+    }
+    '/proposals/': {
+      id: '/proposals/'
+      path: '/proposals'
+      fullPath: '/proposals'
+      preLoaderRoute: typeof ProposalsIndexImport
       parentRoute: typeof rootRoute
     }
   }
@@ -142,8 +156,9 @@ export interface FileRoutesByFullPath {
   '/api': typeof ApiRoute
   '/create-proposal': typeof CreateProposalRoute
   '/my-votes': typeof MyVotesRoute
-  '/proposals': typeof ProposalsRoute
+  '/proposals/$proposalId': typeof ProposalsProposalIdRoute
   '/vote/$voteId': typeof VoteVoteIdRoute
+  '/proposals': typeof ProposalsIndexRoute
 }
 
 export interface FileRoutesByTo {
@@ -153,8 +168,9 @@ export interface FileRoutesByTo {
   '/api': typeof ApiRoute
   '/create-proposal': typeof CreateProposalRoute
   '/my-votes': typeof MyVotesRoute
-  '/proposals': typeof ProposalsRoute
+  '/proposals/$proposalId': typeof ProposalsProposalIdRoute
   '/vote/$voteId': typeof VoteVoteIdRoute
+  '/proposals': typeof ProposalsIndexRoute
 }
 
 export interface FileRoutesById {
@@ -165,8 +181,9 @@ export interface FileRoutesById {
   '/api': typeof ApiRoute
   '/create-proposal': typeof CreateProposalRoute
   '/my-votes': typeof MyVotesRoute
-  '/proposals': typeof ProposalsRoute
+  '/proposals/$proposalId': typeof ProposalsProposalIdRoute
   '/vote/$voteId': typeof VoteVoteIdRoute
+  '/proposals/': typeof ProposalsIndexRoute
 }
 
 export interface FileRouteTypes {
@@ -178,8 +195,9 @@ export interface FileRouteTypes {
     | '/api'
     | '/create-proposal'
     | '/my-votes'
-    | '/proposals'
+    | '/proposals/$proposalId'
     | '/vote/$voteId'
+    | '/proposals'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -188,8 +206,9 @@ export interface FileRouteTypes {
     | '/api'
     | '/create-proposal'
     | '/my-votes'
-    | '/proposals'
+    | '/proposals/$proposalId'
     | '/vote/$voteId'
+    | '/proposals'
   id:
     | '__root__'
     | '/'
@@ -198,8 +217,9 @@ export interface FileRouteTypes {
     | '/api'
     | '/create-proposal'
     | '/my-votes'
-    | '/proposals'
+    | '/proposals/$proposalId'
     | '/vote/$voteId'
+    | '/proposals/'
   fileRoutesById: FileRoutesById
 }
 
@@ -210,8 +230,9 @@ export interface RootRouteChildren {
   ApiRoute: typeof ApiRoute
   CreateProposalRoute: typeof CreateProposalRoute
   MyVotesRoute: typeof MyVotesRoute
-  ProposalsRoute: typeof ProposalsRoute
+  ProposalsProposalIdRoute: typeof ProposalsProposalIdRoute
   VoteVoteIdRoute: typeof VoteVoteIdRoute
+  ProposalsIndexRoute: typeof ProposalsIndexRoute
 }
 
 const rootRouteChildren: RootRouteChildren = {
@@ -221,8 +242,9 @@ const rootRouteChildren: RootRouteChildren = {
   ApiRoute: ApiRoute,
   CreateProposalRoute: CreateProposalRoute,
   MyVotesRoute: MyVotesRoute,
-  ProposalsRoute: ProposalsRoute,
+  ProposalsProposalIdRoute: ProposalsProposalIdRoute,
   VoteVoteIdRoute: VoteVoteIdRoute,
+  ProposalsIndexRoute: ProposalsIndexRoute,
 }
 
 export const routeTree = rootRoute
@@ -241,8 +263,9 @@ export const routeTree = rootRoute
         "/api",
         "/create-proposal",
         "/my-votes",
-        "/proposals",
-        "/vote/$voteId"
+        "/proposals/$proposalId",
+        "/vote/$voteId",
+        "/proposals/"
       ]
     },
     "/": {
@@ -263,11 +286,14 @@ export const routeTree = rootRoute
     "/my-votes": {
       "filePath": "my-votes.tsx"
     },
-    "/proposals": {
-      "filePath": "proposals.tsx"
+    "/proposals/$proposalId": {
+      "filePath": "proposals.$proposalId.tsx"
     },
     "/vote/$voteId": {
       "filePath": "vote.$voteId.tsx"
+    },
+    "/proposals/": {
+      "filePath": "proposals.index.tsx"
     }
   }
 }
