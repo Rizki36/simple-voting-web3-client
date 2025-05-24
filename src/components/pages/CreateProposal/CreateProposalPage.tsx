@@ -76,7 +76,7 @@ const CreateProposalPage = () => {
 	const [activeTab, setActiveTab] = useState("edit");
 	const [showDialog, setShowDialog] = useState(false);
 	const [isSubmitting, setIsSubmitting] = useState(false);
-	const [isAdmin, setIsAdmin] = useState(true); // Mock admin check, will be replaced with real check later
+	const [isAdmin, _setIsAdmin] = useState(true); // Mock admin check, will be replaced with real check later
 
 	const form = useForm<FormValues>({
 		resolver: zodResolver(formSchema),
@@ -98,7 +98,7 @@ const CreateProposalPage = () => {
 	const watchedValues = form.watch();
 
 	// This would be replaced with a real contract call
-	const onSubmit = async (values: FormValues) => {
+	const onSubmit = async (_values: FormValues) => {
 		setShowDialog(true);
 	};
 

@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { Clock, Share2, Users, ExternalLink, Check, Info } from "lucide-react";
+import { Clock, Share2, Users, ExternalLink, Check } from "lucide-react";
 import {
 	BarChart,
 	Bar,

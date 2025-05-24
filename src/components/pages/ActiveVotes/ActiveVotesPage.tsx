@@ -11,7 +11,7 @@ type SortOption = "endingSoon" | "mostVotes" | "newest";
 const ActiveVotesPage = () => {
 	const [searchQuery, setSearchQuery] = useState("");
 	const [sortOption, setSortOption] = useState<SortOption>("endingSoon");
-	const [isLoading, setIsLoading] = useState(false);
+	const [_isLoading, setIsLoading] = useState(false);
 
 	// Mock active votes data for UI development
 	const activeVotes = [

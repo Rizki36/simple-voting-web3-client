@@ -10,7 +10,7 @@ type ProposalStatus = "active" | "ended" | "all";
 
 const MyVotesPage = () => {
 	const [searchQuery, setSearchQuery] = useState("");
-	const [isLoading, setIsLoading] = useState(false);
+	const [_isLoading, setIsLoading] = useState(false);
 	const [filter, setFilter] = useState<ProposalStatus>("all");
 
 	// Mock data for UI development
