@@ -1,14 +1,15 @@
-import { Search, Settings, Plus, Copy, Check } from "lucide-react";
+import { Search, Settings, Plus, Copy, Check, Coins } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { useAppKitAccount } from "@reown/appkit/react";
-import { useState } from "react";
+import { useAppKitAccount, useAppKitBalance } from "@reown/appkit/react";
+import { useEffect, useState } from "react";
 import {
 	Tooltip,
 	TooltipContent,
 	TooltipProvider,
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
+import type { AdapterBlueprint } from "@reown/appkit/adapters";
 
 type HeaderProps = {
 	className?: string;
@@ -16,7 +17,19 @@ type HeaderProps = {
 
 const Header = ({ className }: HeaderProps) => {
 	const { address, isConnected } = useAppKitAccount();
+	const { fetchBalance } = useAppKitBalance();
+	const [balance, setBalance] = useState<
+		AdapterBlueprint.GetBalanceResult | undefined
+	>();
 	const [copied, setCopied] = useState(false);
+
+	useEffect(() => {
+		if (isConnected) {
+			fetchBalance().then((result) => {
+				setBalance(result.data);
+			});
+		}
+	}, [isConnected]);
 
 	const handleCreateProposal = () => {
 		console.log("Create proposal clicked");
@@ -35,6 +48,20 @@ const Header = ({ className }: HeaderProps) => {
 			navigator.clipboard.writeText(address);
 			setCopied(true);
 			setTimeout(() => setCopied(false), 2000);
+		}
+	};
+
+	// Function to get token symbol color
+	const getTokenColor = (symbol?: string) => {
+		switch (symbol?.toUpperCase()) {
+			case "ETH":
+				return "bg-blue-600";
+			case "BNB":
+				return "bg-yellow-500";
+			case "MATIC":
+				return "bg-purple-600";
+			default:
+				return "bg-slate-700";
 		}
 	};
 
@@ -94,12 +121,25 @@ const Header = ({ className }: HeaderProps) => {
 					</span>
 					<Plus className="h-4 w-4" />
 				</Button>
-				<div className="flex items-center gap-1 bg-slate-800 rounded-full p-1 pr-1 md:pr-2">
-					<div className="w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center text-xs">
-						1
-					</div>
-					<span className="text-sm hidden md:inline">0.4 ETH</span>
-				</div>
+				<TooltipProvider>
+					<Tooltip>
+						<TooltipTrigger asChild>
+							<div className="flex items-center gap-1 bg-slate-800 rounded-full p-1 pr-1 md:pr-2">
+								<div
+									className={`w-6 h-6 ${getTokenColor(balance?.symbol)} rounded-full flex items-center justify-center text-xs`}
+								>
+									<Coins className="h-3 w-3 text-white" />
+								</div>
+								<span className="text-sm hidden md:inline">
+									{balance ? `${balance.balance} ${balance.symbol}` : "..."}
+								</span>
+							</div>
+						</TooltipTrigger>
+						<TooltipContent side="bottom">
+							<p>Your balance</p>
+						</TooltipContent>
+					</Tooltip>
+				</TooltipProvider>
 				<Button
 					size="icon"
 					variant="ghost"
