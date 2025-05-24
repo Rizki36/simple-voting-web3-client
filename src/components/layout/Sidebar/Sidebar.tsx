@@ -5,8 +5,6 @@ import {
 	FileText,
 	Vote,
 	PenSquare,
-	Code,
-	BarChart2,
 	CheckCircle,
 	type LucideIcon,
 } from "lucide-react";
@@ -40,18 +38,6 @@ const sidebarItems: SidebarItemType[] = [
 		icon: PenSquare,
 		label: "Create Proposal",
 		path: "/create-proposal",
-	},
-	{
-		icon: Code,
-		label: "API",
-		path: "/api",
-	},
-	{
-		icon: BarChart2,
-		label: "Analytics",
-		path: "/analytics",
-		badge: "New",
-		badgeType: "New",
 	},
 	{
 		icon: CheckCircle,
