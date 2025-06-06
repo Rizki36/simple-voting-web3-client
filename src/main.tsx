@@ -4,15 +4,41 @@ import { RouterProvider, createRouter } from "@tanstack/react-router";
 
 import { createAppKit } from "@reown/appkit/react";
 import { WagmiProvider } from "wagmi";
-import { sepolia, type AppKitNetwork } from "@reown/appkit/networks";
+import {
+	sepolia,
+	type AppKitNetwork,
+	defineChain,
+} from "@reown/appkit/networks";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { WagmiAdapter } from "@reown/appkit-adapter-wagmi";
+import { http } from "wagmi";
 
 // Import the generated route tree
 import { routeTree } from "./routeTree.gen";
 
 // 0. Setup queryClient
 const queryClient = new QueryClient();
+
+// Define Hardhat local network
+const hardhat = defineChain({
+	id: 31337,
+	name: "Hardhat",
+	nativeCurrency: {
+		decimals: 18,
+		name: "Ethereum",
+		symbol: "ETH",
+	},
+	rpcUrls: {
+		default: { http: ["http://localhost:8545"] },
+		public: { http: ["http://localhost:8545"] },
+	},
+	blockExplorers: {
+		default: { name: "Hardhat Explorer", url: "http://localhost:8545" },
+	},
+	testnet: true,
+	caipNetworkId: "eip155:31337",
+	chainNamespace: "eip155",
+});
 
 // 1. Get projectId from https://cloud.reown.com
 const projectId = "adbb42665f4cc1367b8db7159b631cfb";
@@ -25,14 +51,17 @@ const metadata = {
 	icons: ["https://assets.reown.com/reown-profile-pic.png"],
 };
 
-// 3. Set the networks
-const networks: [AppKitNetwork] = [sepolia];
+// 3. Set the networks - add Hardhat
+const networks: [AppKitNetwork, AppKitNetwork] = [sepolia, hardhat];
 
-// 4. Create Wagmi Adapter
+// 4. Create Wagmi Adapter with Hardhat support
 const wagmiAdapter = new WagmiAdapter({
 	networks,
 	projectId,
 	ssr: true,
+	transports: {
+		[hardhat.id]: http("http://localhost:8545"),
+	},
 });
 
 // 5. Create modal
