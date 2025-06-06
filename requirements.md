@@ -52,7 +52,7 @@ The Create Proposal feature enables authorized users (admin/deployer) to create 
 **Functional Requirements:**
 - Only authorized users (admin or deployer) can create new proposals
 - Each proposal must include a title, detailed description, and a list of voting options
-- Proposals should have configurable settings (e.g., voting duration, eligibility requirements)
+- Proposals should have configurable voting duration
 - Form validation to ensure all required information is provided
 - Preview functionality before final submission
 - Confirmation upon successful proposal creation
@@ -145,7 +145,6 @@ The Vote on Proposal feature allows authenticated users to cast their vote on ac
 8. Upon success, the UI updates to show the user's vote and updated results
 
 **Security Considerations:**
-- Validate vote eligibility both client-side and contract-side
 - Prevent double-voting through smart contract restrictions
 - Implement proper error handling for rejected transactions
 - Ensure transaction parameters are correctly formatted and validated
@@ -161,7 +160,6 @@ The Display Voting Results feature provides visual representations of voting dat
 - Show the number and percentage of votes for each option
 - Include the total number of participants who have voted
 - Automatically update results as new votes come in
-- Provide different visualization options based on proposal type
 - Enable users to share results via social media or direct links
 
 **Technical Implementation:**

@@ -4,7 +4,7 @@ A decentralized voting application built on Web3 technology that enables users t
 
 ## Overview
 
-Simple Voting Web3 is a modern web application that leverages blockchain technology to provide a transparent and tamper-proof voting system. Users can connect their Web3 wallets, create proposals, vote on existing proposals, and view voting results.
+Simple Voting Web3 is a modern web application that leverages blockchain technology to provide a transparent and tamper-proof voting platform. Users can connect their Web3 wallets, create proposals, vote on existing proposals, and view voting results.
 
 ## Features
 

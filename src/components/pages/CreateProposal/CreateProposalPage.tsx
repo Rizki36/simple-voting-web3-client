@@ -23,13 +23,6 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from "@/components/ui/select";
 import { Calendar } from "@/components/ui/calendar";
 import {
 	Popover,
@@ -42,7 +35,6 @@ import { cn } from "@/lib/utils";
 import ProposalPreview from "./ProposalPreview";
 import SubmissionDialog from "./SubmissionDialog";
 
-// Schema for form validation
 const formSchema = z.object({
 	title: z
 		.string()
@@ -65,9 +57,7 @@ const formSchema = z.object({
 		.refine((date) => date > new Date(), {
 			message: "End date must be in the future",
 		}),
-	votingSystem: z.enum(["simple", "weighted", "quadratic"]),
-	eligibility: z.enum(["all", "token", "nft"]),
-	minTokens: z.number().optional(),
+	// Removed votingSystem field
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -84,9 +74,7 @@ const CreateProposalPage = () => {
 			title: "",
 			description: "",
 			options: [{ label: "Approve" }, { label: "Reject" }],
-			votingSystem: "simple",
-			eligibility: "all",
-			minTokens: 0,
+			// Removed votingSystem default
 		},
 	});
 
@@ -257,7 +245,7 @@ const CreateProposalPage = () => {
 										Configure additional settings for your proposal
 									</CardDescription>
 								</CardHeader>
-								<CardContent className="space-y-6">
+								<CardContent>
 									{/* End Date Field */}
 									<FormField
 										control={form.control}
@@ -301,104 +289,6 @@ const CreateProposalPage = () => {
 											</FormItem>
 										)}
 									/>
-
-									{/* Voting System Field */}
-									<FormField
-										control={form.control}
-										name="votingSystem"
-										render={({ field }) => (
-											<FormItem>
-												<FormLabel>Voting System</FormLabel>
-												<Select
-													onValueChange={field.onChange}
-													defaultValue={field.value}
-												>
-													<FormControl>
-														<SelectTrigger>
-															<SelectValue placeholder="Select voting system" />
-														</SelectTrigger>
-													</FormControl>
-													<SelectContent>
-														<SelectItem value="simple">
-															Simple Majority
-														</SelectItem>
-														<SelectItem value="weighted">
-															Weighted Voting
-														</SelectItem>
-														<SelectItem value="quadratic">
-															Quadratic Voting
-														</SelectItem>
-													</SelectContent>
-												</Select>
-												<FormDescription>
-													How votes will be counted and winners determined
-												</FormDescription>
-												<FormMessage />
-											</FormItem>
-										)}
-									/>
-
-									{/* Eligibility Field */}
-									<FormField
-										control={form.control}
-										name="eligibility"
-										render={({ field }) => (
-											<FormItem>
-												<FormLabel>Voter Eligibility</FormLabel>
-												<Select
-													onValueChange={field.onChange}
-													defaultValue={field.value}
-												>
-													<FormControl>
-														<SelectTrigger>
-															<SelectValue placeholder="Select eligibility requirement" />
-														</SelectTrigger>
-													</FormControl>
-													<SelectContent>
-														<SelectItem value="all">
-															All Wallet Addresses
-														</SelectItem>
-														<SelectItem value="token">Token Holders</SelectItem>
-														<SelectItem value="nft">NFT Holders</SelectItem>
-													</SelectContent>
-												</Select>
-												<FormDescription>
-													Who can participate in this proposal's voting
-												</FormDescription>
-												<FormMessage />
-											</FormItem>
-										)}
-									/>
-
-									{/* Conditional Field: Min Tokens */}
-									{form.watch("eligibility") === "token" && (
-										<FormField
-											control={form.control}
-											name="minTokens"
-											render={({ field }) => (
-												<FormItem>
-													<FormLabel>Minimum Tokens Required</FormLabel>
-													<FormControl>
-														<Input
-															type="number"
-															min="0"
-															placeholder="0"
-															{...field}
-															onChange={(e) =>
-																field.onChange(
-																	Number.parseInt(e.target.value) || 0,
-																)
-															}
-														/>
-													</FormControl>
-													<FormDescription>
-														Minimum token balance required to participate
-													</FormDescription>
-													<FormMessage />
-												</FormItem>
-											)}
-										/>
-									)}
 								</CardContent>
 							</Card>
 

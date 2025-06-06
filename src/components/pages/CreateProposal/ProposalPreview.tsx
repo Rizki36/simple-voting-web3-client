@@ -16,40 +16,9 @@ type PreviewProps = {
 		description: string;
 		options: { label: string }[];
 		endDate?: Date;
-		votingSystem?: string;
-		eligibility?: string;
-		minTokens?: number;
 	};
 	onBack: () => void;
 	onSubmit: () => void;
-};
-
-// Helper function to format voting system name for display
-const formatVotingSystem = (system: string) => {
-	switch (system) {
-		case "simple":
-			return "Simple Majority";
-		case "weighted":
-			return "Weighted Voting";
-		case "quadratic":
-			return "Quadratic Voting";
-		default:
-			return system;
-	}
-};
-
-// Helper function to format eligibility for display
-const formatEligibility = (eligibility: string, minTokens?: number) => {
-	switch (eligibility) {
-		case "all":
-			return "All wallet addresses";
-		case "token":
-			return `Token holders (min. ${minTokens || 0} tokens)`;
-		case "nft":
-			return "NFT holders";
-		default:
-			return eligibility;
-	}
 };
 
 const ProposalPreview = ({ data, onBack, onSubmit }: PreviewProps) => {
@@ -101,29 +70,6 @@ const ProposalPreview = ({ data, onBack, onSubmit }: PreviewProps) => {
 								</div>
 							</div>
 						))}
-					</div>
-
-					<div className="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-4">
-						<div>
-							<h3 className="text-sm font-medium text-slate-400 mb-1">
-								Voting System
-							</h3>
-							<p>
-								{data.votingSystem
-									? formatVotingSystem(data.votingSystem)
-									: "Not specified"}
-							</p>
-						</div>
-						<div>
-							<h3 className="text-sm font-medium text-slate-400 mb-1">
-								Eligibility
-							</h3>
-							<p>
-								{data.eligibility
-									? formatEligibility(data.eligibility, data.minTokens)
-									: "Not specified"}
-							</p>
-						</div>
 					</div>
 				</CardContent>
 				<CardFooter className="flex justify-end">
