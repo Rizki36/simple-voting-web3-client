@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -34,6 +34,15 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { cn } from "@/lib/utils";
 import ProposalPreview from "./ProposalPreview";
 import SubmissionDialog from "./SubmissionDialog";
+import {
+	useAccount,
+	useContractRead,
+	useWaitForTransactionReceipt,
+	useWriteContract,
+} from "wagmi";
+import { smartContractAddress, smartContractABI } from "@/constants/abi";
+import { toast } from "sonner";
+import { useNavigate } from "@tanstack/react-router";
 
 const formSchema = z.object({
 	title: z
@@ -57,7 +66,6 @@ const formSchema = z.object({
 		.refine((date) => date > new Date(), {
 			message: "End date must be in the future",
 		}),
-	// Removed votingSystem field
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -65,8 +73,40 @@ type FormValues = z.infer<typeof formSchema>;
 const CreateProposalPage = () => {
 	const [activeTab, setActiveTab] = useState("edit");
 	const [showDialog, setShowDialog] = useState(false);
-	const [isSubmitting, setIsSubmitting] = useState(false);
-	const [isAdmin, _setIsAdmin] = useState(true); // Mock admin check, will be replaced with real check later
+	const navigate = useNavigate();
+
+	// Wallet connection status
+	const { address, isConnected } = useAccount();
+
+	// Admin status check (contract owner)
+	const { data: contractOwner, isLoading: isLoadingOwner } = useContractRead({
+		address: smartContractAddress as `0x${string}`,
+		abi: smartContractABI,
+		functionName: "owner",
+	});
+
+	// Check if current user is admin/owner
+	const isAdmin = isConnected && contractOwner === address;
+
+	// Contract write hook for creating a proposal (updated to useWriteContract)
+	const {
+		data: txHash,
+		writeContract,
+		isPending: isWritePending,
+		error: writeError,
+	} = useWriteContract();
+
+	// Wait for transaction hook (updated to useWaitForTransactionReceipt)
+	const {
+		isLoading: isConfirming,
+		isSuccess,
+		error: waitError,
+	} = useWaitForTransactionReceipt({
+		hash: txHash,
+	});
+
+	// Track overall submission state
+	const isSubmitting = isWritePending || isConfirming;
 
 	const form = useForm<FormValues>({
 		resolver: zodResolver(formSchema),
@@ -74,7 +114,6 @@ const CreateProposalPage = () => {
 			title: "",
 			description: "",
 			options: [{ label: "Approve" }, { label: "Reject" }],
-			// Removed votingSystem default
 		},
 	});
 
@@ -85,22 +124,75 @@ const CreateProposalPage = () => {
 
 	const watchedValues = form.watch();
 
-	// This would be replaced with a real contract call
-	const onSubmit = async (_values: FormValues) => {
+	// Handle successful transaction
+	useEffect(() => {
+		if (isSuccess) {
+			toast.success("Proposal created successfully!");
+			setShowDialog(false);
+			navigate({ to: "/" });
+		}
+	}, [isSuccess, navigate]);
+
+	// Handle errors
+	useEffect(() => {
+		if (writeError || waitError) {
+			toast.error(
+				`Transaction failed: ${
+					writeError?.message || waitError?.message || "Unknown error"
+				}`,
+			);
+		}
+	}, [writeError, waitError]);
+
+	const onSubmit = (values: FormValues) => {
 		setShowDialog(true);
 	};
 
 	const handleConfirmSubmission = async () => {
-		setIsSubmitting(true);
+		const values = form.getValues();
 
-		// Simulate blockchain transaction
-		await new Promise((resolve) => setTimeout(resolve, 2000));
+		// Convert form values to contract parameters
+		const title = values.title;
+		const description = values.description;
+		const options = values.options.map((option) => option.label);
 
-		setIsSubmitting(false);
-		setShowDialog(false);
+		// Convert JavaScript Date to Unix timestamp (seconds)
+		const endTime = Math.floor(values.endDate.getTime() / 1000);
 
-		// Navigate to proposal list or show success message
+		// Call the contract using the new writeContract method
+		writeContract({
+			address: smartContractAddress as `0x${string}`,
+			abi: smartContractABI,
+			functionName: "createProposal",
+			args: [title, description, options, BigInt(endTime)],
+		});
 	};
+
+	// Wait for owner loading to complete
+	if (!isConnected) {
+		return (
+			<div className="container mx-auto px-4 py-6">
+				<Alert variant="destructive" className="mb-6">
+					<AlertCircle className="h-4 w-4" />
+					<AlertTitle>Wallet not connected</AlertTitle>
+					<AlertDescription>
+						You need to connect your wallet to create proposals.
+					</AlertDescription>
+				</Alert>
+				<Button variant="outline" onClick={() => navigate({ to: "/" })}>
+					Return to Dashboard
+				</Button>
+			</div>
+		);
+	}
+
+	if (isLoadingOwner) {
+		return (
+			<div className="container mx-auto px-4 py-6">
+				<p>Loading admin status...</p>
+			</div>
+		);
+	}
 
 	if (!isAdmin) {
 		return (
@@ -109,11 +201,13 @@ const CreateProposalPage = () => {
 					<AlertCircle className="h-4 w-4" />
 					<AlertTitle>Access Denied</AlertTitle>
 					<AlertDescription>
-						You don't have permission to create proposals. Only administrators
-						can access this feature.
+						You don't have permission to create proposals. Only the contract
+						owner can access this feature.
 					</AlertDescription>
 				</Alert>
-				<Button variant="outline">Return to Dashboard</Button>
+				<Button variant="outline" onClick={() => navigate({ to: "/" })}>
+					Return to Dashboard
+				</Button>
 			</div>
 		);
 	}
@@ -293,8 +387,12 @@ const CreateProposalPage = () => {
 							</Card>
 
 							<div className="flex justify-between">
-								<Button variant="outline" type="button">
-									Save as Draft
+								<Button
+									variant="outline"
+									type="button"
+									onClick={() => navigate({ to: "/" })}
+								>
+									Cancel
 								</Button>
 								<div className="space-x-2">
 									<Button
@@ -322,10 +420,11 @@ const CreateProposalPage = () => {
 
 			<SubmissionDialog
 				open={showDialog}
-				onClose={() => setShowDialog(false)}
+				onClose={() => !isSubmitting && setShowDialog(false)}
 				onConfirm={handleConfirmSubmission}
 				isSubmitting={isSubmitting}
 				proposal={watchedValues}
+				transactionHash={txHash}
 			/>
 		</div>
 	);

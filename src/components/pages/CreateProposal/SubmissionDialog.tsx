@@ -1,5 +1,3 @@
-import { format } from "date-fns";
-import { Loader2 } from "lucide-react";
 import {
 	Dialog,
 	DialogContent,
@@ -9,6 +7,8 @@ import {
 	DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { format } from "date-fns";
+import { Loader2 } from "lucide-react";
 
 type SubmissionDialogProps = {
 	open: boolean;
@@ -19,8 +19,9 @@ type SubmissionDialogProps = {
 		title: string;
 		description: string;
 		options: { label: string }[];
-		endDate?: Date;
+		endDate: Date;
 	};
+	transactionHash?: `0x${string}`;
 };
 
 const SubmissionDialog = ({
@@ -29,59 +30,60 @@ const SubmissionDialog = ({
 	onConfirm,
 	isSubmitting,
 	proposal,
+	transactionHash,
 }: SubmissionDialogProps) => {
+	const { title, endDate, options } = proposal;
+
 	return (
 		<Dialog open={open} onOpenChange={onClose}>
-			<DialogContent className="max-w-md">
+			<DialogContent className="sm:max-w-[425px]">
 				<DialogHeader>
-					<DialogTitle>Confirm Submission</DialogTitle>
+					<DialogTitle>Confirm Proposal Submission</DialogTitle>
 					<DialogDescription>
-						You are about to submit this proposal to the blockchain. This action
+						You're about to submit this proposal to the blockchain. This action
 						cannot be undone.
 					</DialogDescription>
 				</DialogHeader>
-
 				<div className="py-4">
-					<div className="mb-4">
-						<h3 className="text-sm font-medium text-slate-400">Title</h3>
-						<p className="font-medium">{proposal.title}</p>
+					<h3 className="font-medium">{title}</h3>
+					<p className="text-sm text-muted-foreground mt-1">
+						Voting ends: {endDate ? format(endDate, "PPP") : "Not set"}
+					</p>
+					<div className="mt-4">
+						<h4 className="text-sm font-medium">Voting options:</h4>
+						<ul className="mt-2 text-sm">
+							{options.map((option, index) => (
+								<li key={index} className="list-disc ml-4">
+									{option.label}
+								</li>
+							))}
+						</ul>
 					</div>
 
-					<div className="mb-4">
-						<h3 className="text-sm font-medium text-slate-400">Options</h3>
-						<p>{proposal.options.map((o) => o.label).join(", ")}</p>
-					</div>
-
-					<div className="mb-4">
-						<h3 className="text-sm font-medium text-slate-400">End Date</h3>
-						<p>
-							{proposal.endDate ? format(proposal.endDate, "PPP") : "Not set"}
-						</p>
-					</div>
-
-					<div className="bg-slate-800 p-3 rounded-md mt-4 text-xs">
-						<p className="font-medium text-slate-300 mb-1">
-							Transaction Information:
-						</p>
-						<div className="flex justify-between">
-							<span className="text-slate-400">Estimated Gas:</span>
-							<span>~0.005 ETH</span>
+					{transactionHash && (
+						<div className="mt-4 p-3 bg-secondary rounded-md">
+							<p className="text-xs font-medium">Transaction Hash:</p>
+							<p className="text-xs break-all mt-1 text-muted-foreground">
+								{transactionHash}
+							</p>
 						</div>
-					</div>
+					)}
 				</div>
-
 				<DialogFooter>
 					<Button variant="outline" onClick={onClose} disabled={isSubmitting}>
 						Cancel
 					</Button>
-					<Button onClick={onConfirm} disabled={isSubmitting}>
+					<Button
+						onClick={onConfirm}
+						disabled={isSubmitting || !!transactionHash}
+					>
 						{isSubmitting ? (
 							<>
 								<Loader2 className="mr-2 h-4 w-4 animate-spin" />
-								Submitting...
+								{transactionHash ? "Processing..." : "Confirming..."}
 							</>
 						) : (
-							"Confirm & Submit"
+							"Submit Proposal"
 						)}
 					</Button>
 				</DialogFooter>
