@@ -1,8 +1,8 @@
 import type { Abi } from "viem";
 
-export const storageSC = "0x5FbDB2315678afecb367f032d93F642f64180aa3";
+export const smartContractAddress = import.meta.env.VITE_SMART_CONTRACT_ADDRESS
 
-export const storageABI: Abi = [
+export const smartContractABI: Abi = [
     {
         "inputs": [],
         "stateMutability": "nonpayable",
@@ -202,6 +202,19 @@ export const storageABI: Abi = [
         "type": "function"
     },
     {
+        "inputs": [],
+        "name": "getAllProposalIds",
+        "outputs": [
+            {
+                "internalType": "uint256[]",
+                "name": "",
+                "type": "uint256[]"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
         "inputs": [
             {
                 "internalType": "uint256",
@@ -292,6 +305,64 @@ export const storageABI: Abi = [
                 "internalType": "enum SimpleVotingWeb3.ProposalStatus",
                 "name": "status",
                 "type": "uint8"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "uint256",
+                "name": "proposalId",
+                "type": "uint256"
+            }
+        ],
+        "name": "getProposalStatus",
+        "outputs": [
+            {
+                "internalType": "enum SimpleVotingWeb3.ProposalStatus",
+                "name": "",
+                "type": "uint8"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "uint256[]",
+                "name": "proposalIds",
+                "type": "uint256[]"
+            }
+        ],
+        "name": "getProposalsBasicInfo",
+        "outputs": [
+            {
+                "internalType": "uint256[]",
+                "name": "ids",
+                "type": "uint256[]"
+            },
+            {
+                "internalType": "string[]",
+                "name": "titles",
+                "type": "string[]"
+            },
+            {
+                "internalType": "enum SimpleVotingWeb3.ProposalStatus[]",
+                "name": "statuses",
+                "type": "uint8[]"
+            },
+            {
+                "internalType": "uint256[]",
+                "name": "endTimes",
+                "type": "uint256[]"
+            },
+            {
+                "internalType": "uint256[]",
+                "name": "totalVotes",
+                "type": "uint256[]"
             }
         ],
         "stateMutability": "view",
