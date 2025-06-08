@@ -7,8 +7,11 @@ import {
 	PenSquare,
 	CheckCircle,
 	type LucideIcon,
+	Loader2,
 } from "lucide-react";
 import ActiveVoteItem from "./ActiveVoteItem";
+import { useActiveVotes } from "@/hooks/useActiveVotes";
+import { useAccount } from "wagmi";
 
 type SidebarItemType = {
 	icon: LucideIcon;
@@ -18,40 +21,44 @@ type SidebarItemType = {
 	badgeType?: "New" | "Count" | "None";
 };
 
-const sidebarItems: SidebarItemType[] = [
-	{
-		icon: LayoutDashboard,
-		label: "Dashboard",
-		path: "/",
-	},
-	{
-		icon: FileText,
-		label: "Proposals",
-		path: "/proposals",
-	},
-	{
-		icon: Vote,
-		label: "My Votes",
-		path: "/my-votes",
-	},
-	{
-		icon: PenSquare,
-		label: "Create Proposal",
-		path: "/create-proposal",
-	},
-	{
-		icon: CheckCircle,
-		label: "Active Votes",
-		path: "/active-votes",
-		badge: "3",
-		badgeType: "Count",
-	},
-];
-
 const Sidebar = () => {
+	const { isConnected } = useAccount();
+	const { activeVotes, isLoading } = useActiveVotes();
 	const currentPath = useRouterState({
 		select: (state) => state.location.pathname,
 	});
+
+	// Update side navigation with active votes count
+	const sidebarItems: SidebarItemType[] = [
+		{
+			icon: LayoutDashboard,
+			label: "Dashboard",
+			path: "/",
+		},
+		{
+			icon: FileText,
+			label: "Proposals",
+			path: "/proposals",
+		},
+		{
+			icon: Vote,
+			label: "My Votes",
+			path: "/my-votes",
+		},
+		{
+			icon: PenSquare,
+			label: "Create Proposal",
+			path: "/create-proposal",
+		},
+		{
+			icon: CheckCircle,
+			label: "Active Votes",
+			path: "/active-votes",
+			badge:
+				activeVotes?.length > 0 ? activeVotes.length.toString() : undefined,
+			badgeType: "Count",
+		},
+	];
 
 	// Check if a path is active, including handling nested paths
 	const isPathActive = (path: string) => {
@@ -97,9 +104,45 @@ const Sidebar = () => {
 				<div className="text-sm text-slate-400 md:block sm:hidden xs:hidden">
 					Your Active Votes
 				</div>
-				{[1, 2, 3].map((i) => (
-					<ActiveVoteItem key={i} index={i} />
-				))}
+
+				{!isConnected ? (
+					<div className="text-xs text-slate-500 text-center py-2">
+						Connect wallet to see your votes
+					</div>
+				) : isLoading ? (
+					<div className="flex justify-center items-center py-4">
+						<Loader2 className="h-4 w-4 animate-spin text-slate-400" />
+					</div>
+				) : activeVotes.length === 0 ? (
+					<div className="text-xs text-slate-500 text-center py-2">
+						No active votes found
+					</div>
+				) : (
+					activeVotes
+						.slice(0, 3)
+						.map((vote) => (
+							<ActiveVoteItem
+								key={vote.id}
+								id={vote.id}
+								title={vote.title}
+								optionText={vote.optionText}
+								endTime={vote.endTime}
+							/>
+						))
+				)}
+
+				<div className="text-xs text-slate-500 text-center py-2">
+					Connect wallet to see your votes
+				</div>
+
+				{activeVotes.length > 3 && (
+					<Link
+						to="/my-votes"
+						className="text-xs text-blue-400 hover:text-blue-300 block text-center mt-2"
+					>
+						View all ({activeVotes.length})
+					</Link>
+				)}
 			</div>
 		</aside>
 	);
