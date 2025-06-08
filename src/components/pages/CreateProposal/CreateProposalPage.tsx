@@ -36,7 +36,7 @@ import ProposalPreview from "./ProposalPreview";
 import SubmissionDialog from "./SubmissionDialog";
 import {
 	useAccount,
-	useContractRead,
+	useReadContract,
 	useWaitForTransactionReceipt,
 	useWriteContract,
 } from "wagmi";
@@ -79,7 +79,7 @@ const CreateProposalPage = () => {
 	const { address, isConnected } = useAccount();
 
 	// Admin status check (contract owner)
-	const { data: contractOwner, isLoading: isLoadingOwner } = useContractRead({
+	const { data: contractOwner, isLoading: isLoadingOwner } = useReadContract({
 		address: smartContractAddress as `0x${string}`,
 		abi: smartContractABI,
 		functionName: "owner",

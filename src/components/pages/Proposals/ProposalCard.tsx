@@ -1,117 +1,84 @@
-import { Link } from "@tanstack/react-router";
+import type { Proposal } from "./ProposalsPage";
+import { Button } from "@/components/ui/button";
+import {
+	Card,
+	CardContent,
+	CardFooter,
+	CardHeader,
+	CardTitle,
+} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Clock, Users, ChevronRight } from "lucide-react";
-
-type ProposalStatus = "active" | "ended" | "all";
+import { formatDistanceToNow } from "date-fns";
+import { Link, type LinkProps } from "@tanstack/react-router";
 
 type ProposalCardProps = {
-	proposal: {
-		id: string;
-		title: string;
-		description: string;
-		status: ProposalStatus;
-		endDate: string;
-		votesCount: number;
-		createdAt: string;
-		options: string[];
-		results: number[];
-	};
+	proposal: Proposal;
+	linkProps?: LinkProps;
 };
 
-const ProposalCard = ({ proposal }: ProposalCardProps) => {
-	const isActive = proposal.status === "active";
+const ProposalCard = (props: ProposalCardProps) => {
+	const { proposal, linkProps } = props;
+	const { title, description, status, endDate, votesCount, options, results } =
+		proposal;
 
-	// Calculate remaining time for active proposals
-	const getRemainingTime = () => {
-		if (!isActive) return "Ended";
+	// Format description by truncating
+	const truncatedDescription =
+		description.length > 100
+			? `${description.substring(0, 100)}...`
+			: description;
 
-		const endDate = new Date(proposal.endDate);
-		const now = new Date();
-		const diffTime = Math.max(0, endDate.getTime() - now.getTime());
-		const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-		const diffHours = Math.floor(
-			(diffTime % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60),
-		);
+	// Calculate time remaining or time since ended
+	const timeText =
+		status === "active"
+			? `Ends ${formatDistanceToNow(endDate, { addSuffix: true })}`
+			: `Ended ${formatDistanceToNow(endDate, { addSuffix: true })}`;
 
-		if (diffDays > 0) {
-			return `${diffDays}d ${diffHours}h remaining`;
-		}
-		return `${diffHours}h remaining`;
-	};
-
-	// Format date to human-readable
-	const formatDate = (dateString: string) => {
-		const date = new Date(dateString);
-		return date.toLocaleDateString("en-US", {
-			year: "numeric",
-			month: "short",
-			day: "numeric",
-		});
-	};
-
-	// Get the leading option
-	const getLeadingOption = () => {
-		if (!proposal.results.length) return null;
-
-		const maxIndex = proposal.results.indexOf(Math.max(...proposal.results));
-		return {
-			label: proposal.options[maxIndex],
-			value: proposal.results[maxIndex],
-		};
-	};
-
-	const leadingOption = getLeadingOption();
+	// Get leading option index
+	const leadingOptionIndex = results.indexOf(Math.max(...results));
 
 	return (
-		<Link
-			to="/proposals/$proposalId"
-			params={{ proposalId: String(proposal.id) }}
-			className="bg-slate-800 rounded-lg p-5 hover:bg-slate-750 transition-colors flex flex-col h-full"
-		>
-			<div className="flex justify-between items-start mb-3">
-				<Badge variant={isActive ? "default" : "secondary"} className="mb-2">
-					{isActive ? "Active" : "Closed"}
-				</Badge>
-				<div className="flex items-center text-xs text-slate-400">
-					<Clock className="h-3 w-3 mr-1" />
-					{isActive ? getRemainingTime() : "Ended"}
+		<Card className="h-full flex flex-col hover:border-slate-700 transition-all">
+			<CardHeader className="pb-2">
+				<div className="flex justify-between items-start">
+					<Badge
+						className={status === "active" ? "bg-green-700" : "bg-slate-600"}
+					>
+						{status === "active" ? "Active" : "Ended"}
+					</Badge>
+					<div className="text-xs text-slate-400">{timeText}</div>
 				</div>
-			</div>
+				<CardTitle className="mt-2 leading-tight">
+					<Link
+						className="cursor-pointer hover:text-blue-400 transition-colors"
+						{...linkProps}
+					>
+						{title}
+					</Link>
+				</CardTitle>
+			</CardHeader>
 
-			<h3 className="text-lg font-medium mb-2">{proposal.title}</h3>
+			<CardContent className="pb-4 flex-grow">
+				<p className="text-sm text-slate-300 mb-4">{truncatedDescription}</p>
 
-			<p className="text-sm text-slate-300 mb-4 line-clamp-2 flex-grow">
-				{proposal.description}
-			</p>
-
-			{/* Leading option with progress bar for visual representation */}
-			<div className="mb-4">
-				{leadingOption && (
-					<>
-						<div className="flex justify-between text-sm mb-1">
-							<span className="font-medium">
-								{leadingOption.label}
-								<span className="text-blue-400"> {leadingOption.value}%</span>
-							</span>
-						</div>
-						<Progress value={leadingOption.value} className="h-2" />
-					</>
-				)}
-			</div>
-
-			<div className="flex justify-between items-center text-xs text-slate-400">
-				<div className="flex items-center">
-					<Users className="h-3 w-3 mr-1" />
-					{proposal.votesCount} votes
+				<div className="mt-4">
+					<div className="flex justify-between text-xs text-slate-400 mb-1">
+						<div>Top option: {options[leadingOptionIndex]}</div>
+						<div>{results[leadingOptionIndex]}%</div>
+					</div>
+					<Progress value={results[leadingOptionIndex]} className="h-1" />
 				</div>
-				<div>Created {formatDate(proposal.createdAt)}</div>
-			</div>
+			</CardContent>
 
-			<div className="flex justify-end mt-4">
-				<ChevronRight className="h-5 w-5 text-slate-400" />
-			</div>
-		</Link>
+			<CardFooter className="pt-2 border-t border-slate-800 flex justify-between">
+				<div className="text-xs text-slate-400">{votesCount} votes</div>
+				<Link {...linkProps}>
+					<Button variant="outline" size="sm">
+						View Details
+					</Button>
+				</Link>
+			</CardFooter>
+		</Card>
 	);
 };
 

@@ -8,94 +8,151 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import { Search, Calendar, Users, Clock } from "lucide-react";
+import {
+	Search,
+	Calendar,
+	Users,
+	Clock,
+	AlertCircle,
+	Plus,
+	Link,
+} from "lucide-react";
 import ProposalListSkeleton from "./ProposalListSkeleton";
 import ProposalCard from "./ProposalCard";
+import { useAccount } from "wagmi";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import useProposalsQuery from "@/hooks/useProposalListQuery";
 
 type ProposalStatus = "active" | "ended" | "all";
 type SortOption = "newest" | "oldest" | "endingSoon" | "mostVotes";
+
+export type Proposal = {
+	id: string;
+	title: string;
+	description: string;
+	status: "active" | "ended";
+	endDate: Date;
+	votesCount: number;
+	createdAt: Date;
+	options: string[];
+	results: number[]; // Percentages
+	creator: string;
+};
+
+const useProposalList = ({
+	statusFilter = "all",
+	searchQuery = "",
+	sortOption = "newest",
+}: {
+	statusFilter?: ProposalStatus;
+	searchQuery?: string;
+	sortOption?: SortOption;
+}) => {
+	const { data: proposals, isLoading, error } = useProposalsQuery();
+
+	// Apply filters and sorting to the proposals
+	const filteredAndSortedProposals = proposals
+		? proposals
+				.filter((proposal) => {
+					// Apply status filter
+					if (statusFilter !== "all" && proposal.status !== statusFilter) {
+						return false;
+					}
+
+					// Apply search filter (case insensitive)
+					if (searchQuery) {
+						const query = searchQuery.toLowerCase();
+						return (
+							proposal.title.toLowerCase().includes(query) ||
+							proposal.description.toLowerCase().includes(query)
+						);
+					}
+
+					return true;
+				})
+				.sort((a, b) => {
+					// Apply sorting
+					switch (sortOption) {
+						case "newest":
+							return b.createdAt.getTime() - a.createdAt.getTime();
+						case "oldest":
+							return a.createdAt.getTime() - b.createdAt.getTime();
+						case "endingSoon":
+							// Sort by time remaining (for active proposals first, then ended)
+							if (a.status === "active" && b.status === "ended") return -1;
+							if (a.status === "ended" && b.status === "active") return 1;
+							if (a.status === "active" && b.status === "active") {
+								return a.endDate.getTime() - b.endDate.getTime();
+							}
+							return 0;
+						case "mostVotes":
+							return b.votesCount - a.votesCount;
+						default:
+							return 0;
+					}
+				})
+		: [];
+
+	return {
+		proposals: filteredAndSortedProposals,
+		isLoading,
+		error,
+	};
+};
+
+const ErrorAlert = ({ error }: { error: unknown }) => (
+	<div className="container mx-auto px-4 py-6">
+		<Alert variant="destructive">
+			<AlertCircle className="h-4 w-4" />
+			<AlertTitle>Error</AlertTitle>
+			<AlertDescription>
+				{error instanceof Error ? error.message : "Failed to load proposals"}
+			</AlertDescription>
+		</Alert>
+		<Button
+			variant="outline"
+			onClick={() => window.location.reload()}
+			className="mt-4"
+		>
+			Retry
+		</Button>
+	</div>
+);
 
 const ProposalsPage = () => {
 	const [searchQuery, setSearchQuery] = useState("");
 	const [statusFilter, setStatusFilter] = useState<ProposalStatus>("all");
 	const [sortOption, setSortOption] = useState<SortOption>("newest");
-	const [isLoading, setIsLoading] = useState(false);
+	const { isConnected } = useAccount();
 
-	// Mock proposals for UI development
-	const proposals = [
-		{
-			id: "1",
-			title: "Integrate Layer 2 Solutions",
-			description:
-				"Proposal to integrate layer 2 scaling solutions to reduce gas fees and improve transaction speeds across the protocol.",
-			status: "active" as ProposalStatus,
-			endDate: "2025-06-10T00:00:00Z",
-			votesCount: 142,
-			createdAt: "2025-05-15T00:00:00Z",
-			options: ["Approve", "Reject", "Abstain"],
-			results: [70, 25, 5], // Percentages
-		},
-		{
-			id: "2",
-			title: "Treasury Diversification Plan",
-			description:
-				"Proposal to diversify the protocol's treasury by allocating funds to different assets to reduce risk.",
-			status: "active" as ProposalStatus,
-			endDate: "2025-06-05T00:00:00Z",
-			votesCount: 256,
-			createdAt: "2025-05-12T00:00:00Z",
-			options: ["Approve", "Reject"],
-			results: [65, 35], // Percentages
-		},
-		{
-			id: "3",
-			title: "Governance Parameter Updates",
-			description:
-				"Updates to key governance parameters including voting thresholds and proposal duration.",
-			status: "ended" as ProposalStatus,
-			endDate: "2025-05-20T00:00:00Z",
-			votesCount: 189,
-			createdAt: "2025-05-10T00:00:00Z",
-			options: ["For", "Against"],
-			results: [82, 18], // Percentages
-		},
-		{
-			id: "4",
-			title: "Community Fund Allocation",
-			description:
-				"Proposal to allocate funds from the community treasury for developer grants and community initiatives.",
-			status: "ended" as ProposalStatus,
-			endDate: "2025-05-15T00:00:00Z",
-			votesCount: 320,
-			createdAt: "2025-05-01T00:00:00Z",
-			options: ["Approve", "Reject", "More Discussion"],
-			results: [45, 30, 25], // Percentages
-		},
-	];
+	const {
+		proposals: filteredAndSortedProposals,
+		isLoading,
+		error,
+	} = useProposalList({
+		statusFilter,
+		searchQuery,
+		sortOption,
+	});
 
+	// Handle form submission for search
 	const handleSearch = (e: React.FormEvent) => {
 		e.preventDefault();
-		// Will implement actual search functionality later
-		setIsLoading(true);
-
-		// Simulate API call
-		setTimeout(() => {
-			setIsLoading(false);
-		}, 1000);
 	};
 
-	const filteredProposals = proposals.filter(
-		(proposal) =>
-			(statusFilter === "all" || proposal.status === statusFilter) &&
-			(proposal.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-				proposal.description.toLowerCase().includes(searchQuery.toLowerCase())),
-	);
+	// Show error state
+	if (error) return <ErrorAlert error={error} />;
 
 	return (
 		<div className="container mx-auto px-4 py-6">
 			<div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6">
 				<h1 className="text-2xl font-bold mb-4 sm:mb-0">Proposals</h1>
-				<Button>Create Proposal</Button>
+				<Link to="/proposals/create">
+					<Button disabled={!isConnected}>
+						<Plus className="h-4 w-4 mr-2" />
+						Create Proposal
+					</Button>
+				</Link>
 			</div>
 
 			{/* Filters and Search */}
@@ -168,43 +225,49 @@ const ProposalsPage = () => {
 				</div>
 			</div>
 
-			{/* Results */}
+			{/* Results count */}
 			<div className="mb-4 text-sm text-slate-400">
-				{filteredProposals.length} proposal
-				{filteredProposals.length !== 1 ? "s" : ""} found
+				{isLoading ? (
+					"Loading proposals..."
+				) : (
+					<>
+						{filteredAndSortedProposals.length} proposal
+						{filteredAndSortedProposals.length !== 1 ? "s" : ""} found
+					</>
+				)}
 			</div>
 
 			{/* Proposals List */}
 			{isLoading ? (
 				<ProposalListSkeleton count={4} />
-			) : (
+			) : filteredAndSortedProposals.length > 0 ? (
 				<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-					{filteredProposals.map((proposal) => (
-						<ProposalCard key={proposal.id} proposal={proposal} />
+					{filteredAndSortedProposals.map((proposal) => (
+						<ProposalCard
+							key={proposal.id}
+							proposal={proposal}
+							linkProps={{
+								to: "/proposals/$proposalId",
+								params: { proposalId: proposal.id },
+							}}
+						/>
 					))}
 				</div>
-			)}
-
-			{/* Pagination - Basic version */}
-			<div className="flex justify-center mt-8">
-				<div className="flex gap-2">
-					<Button variant="outline" size="sm" disabled>
-						Previous
-					</Button>
-					<Button variant="outline" size="sm" className="bg-slate-800">
-						1
-					</Button>
-					<Button variant="outline" size="sm">
-						2
-					</Button>
-					<Button variant="outline" size="sm">
-						3
-					</Button>
-					<Button variant="outline" size="sm">
-						Next
-					</Button>
+			) : (
+				<div className="text-center py-12">
+					<p className="text-slate-400">
+						No proposals found matching your criteria
+					</p>
+					{!isConnected && (
+						<Alert variant="default" className="mt-4 max-w-md mx-auto">
+							<AlertTitle>Connect your wallet</AlertTitle>
+							<AlertDescription>
+								Connect your wallet to view and interact with proposals
+							</AlertDescription>
+						</Alert>
+					)}
 				</div>
-			</div>
+			)}
 		</div>
 	);
 };
