@@ -53,10 +53,12 @@ const VotingActivity = () => {
 							blockHash: event.blockHash,
 						});
 
-						const args = event.args as {
-							voter: `0x${string}`;
-							proposalId: number;
-							option: number;
+						const args = {
+							voter: event.args.voter as `0x${string}`,
+							proposalId: event.args.proposalId
+								? Number(event.args.proposalId)
+								: 0,
+							option: event.args.option ? Number(event.args.option) : 0,
 						};
 
 						return {
@@ -77,9 +79,9 @@ const VotingActivity = () => {
 							blockHash: event.blockHash,
 						});
 
-						const args = event.args as {
-							creator: `0x${string}`;
-							proposalId: number;
+						const args = {
+							creator: event.args.creator as `0x${string}`,
+							proposalId: Number(event.args.proposalId),
 						};
 
 						return {
