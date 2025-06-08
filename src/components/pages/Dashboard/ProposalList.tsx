@@ -58,11 +58,9 @@ const ProposalList = ({ filter, onSelectProposal }: ProposalListProps) => {
 	return (
 		<div className="space-y-2">
 			{filteredProposals.map((proposal) => (
-				<button
-					type="button"
+				<div
 					key={proposal.id}
 					className="p-3 border border-slate-800 rounded-lg hover:bg-slate-900/50 transition-colors cursor-pointer block w-full text-left"
-					onClick={() => onSelectProposal(proposal.id)}
 				>
 					<div className="flex justify-between items-start">
 						<div>
@@ -95,7 +93,7 @@ const ProposalList = ({ filter, onSelectProposal }: ProposalListProps) => {
 							View Details <ArrowRight className="ml-1 h-3 w-3" />
 						</Button>
 					</div>
-				</button>
+				</div>
 			))}
 
 			{proposals && proposals.length > 5 && !viewAll && (
