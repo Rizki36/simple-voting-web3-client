@@ -132,7 +132,7 @@ const Header = ({ className }: HeaderProps) => {
 								</div>
 
 								{balance ? (
-									<span className="text-sm hidden md:inline mr-1">{`${formatBalance(
+									<span className="text-sm hidden md:inline mr-1 md:mr-2">{`${formatBalance(
 										balance.balance,
 									)} ${balance.symbol}`}</span>
 								) : (
