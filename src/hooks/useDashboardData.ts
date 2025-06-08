@@ -1,7 +1,6 @@
-import { useQuery } from "@tanstack/react-query";
-import { useChainId, usePublicClient, useReadContract } from "wagmi";
+import { useReadContract } from "wagmi";
 import { smartContractAddress, smartContractABI } from "@/constants/abi";
-import { fetchProposals } from "@/lib/services";
+import useProposalsQuery from "./useProposalListQuery";
 
 export function useDashboardData() {
     // Get total proposal count from contract
@@ -11,20 +10,12 @@ export function useDashboardData() {
         functionName: "getProposalCount",
     });
 
-    const chainId = useChainId();
-    const publicClient = usePublicClient({ chainId: chainId });
-
     // Fetch all proposals
     const {
         data: proposals,
         isLoading: isProposalsLoading,
         error: proposalsError
-    } = useQuery({
-        queryKey: ["proposals", publicClient?.uid],
-        queryFn: () => fetchProposals({
-            publicClient,
-        }),
-    });
+    } = useProposalsQuery()
 
     // Calculate dashboard statistics
     const stats = {
