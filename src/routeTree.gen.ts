@@ -13,8 +13,6 @@
 import { Route as rootRoute } from './routes/__root'
 import { Route as MyVotesImport } from './routes/my-votes'
 import { Route as CreateProposalImport } from './routes/create-proposal'
-import { Route as ApiImport } from './routes/api'
-import { Route as AnalyticsImport } from './routes/analytics'
 import { Route as ActiveVotesImport } from './routes/active-votes'
 import { Route as IndexImport } from './routes/index'
 import { Route as ProposalsIndexImport } from './routes/proposals.index'
@@ -32,18 +30,6 @@ const MyVotesRoute = MyVotesImport.update({
 const CreateProposalRoute = CreateProposalImport.update({
   id: '/create-proposal',
   path: '/create-proposal',
-  getParentRoute: () => rootRoute,
-} as any)
-
-const ApiRoute = ApiImport.update({
-  id: '/api',
-  path: '/api',
-  getParentRoute: () => rootRoute,
-} as any)
-
-const AnalyticsRoute = AnalyticsImport.update({
-  id: '/analytics',
-  path: '/analytics',
   getParentRoute: () => rootRoute,
 } as any)
 
@@ -95,20 +81,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ActiveVotesImport
       parentRoute: typeof rootRoute
     }
-    '/analytics': {
-      id: '/analytics'
-      path: '/analytics'
-      fullPath: '/analytics'
-      preLoaderRoute: typeof AnalyticsImport
-      parentRoute: typeof rootRoute
-    }
-    '/api': {
-      id: '/api'
-      path: '/api'
-      fullPath: '/api'
-      preLoaderRoute: typeof ApiImport
-      parentRoute: typeof rootRoute
-    }
     '/create-proposal': {
       id: '/create-proposal'
       path: '/create-proposal'
@@ -152,8 +124,6 @@ declare module '@tanstack/react-router' {
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/active-votes': typeof ActiveVotesRoute
-  '/analytics': typeof AnalyticsRoute
-  '/api': typeof ApiRoute
   '/create-proposal': typeof CreateProposalRoute
   '/my-votes': typeof MyVotesRoute
   '/proposals/$proposalId': typeof ProposalsProposalIdRoute
@@ -164,8 +134,6 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/active-votes': typeof ActiveVotesRoute
-  '/analytics': typeof AnalyticsRoute
-  '/api': typeof ApiRoute
   '/create-proposal': typeof CreateProposalRoute
   '/my-votes': typeof MyVotesRoute
   '/proposals/$proposalId': typeof ProposalsProposalIdRoute
@@ -177,8 +145,6 @@ export interface FileRoutesById {
   __root__: typeof rootRoute
   '/': typeof IndexRoute
   '/active-votes': typeof ActiveVotesRoute
-  '/analytics': typeof AnalyticsRoute
-  '/api': typeof ApiRoute
   '/create-proposal': typeof CreateProposalRoute
   '/my-votes': typeof MyVotesRoute
   '/proposals/$proposalId': typeof ProposalsProposalIdRoute
@@ -191,8 +157,6 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/active-votes'
-    | '/analytics'
-    | '/api'
     | '/create-proposal'
     | '/my-votes'
     | '/proposals/$proposalId'
@@ -202,8 +166,6 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/active-votes'
-    | '/analytics'
-    | '/api'
     | '/create-proposal'
     | '/my-votes'
     | '/proposals/$proposalId'
@@ -213,8 +175,6 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/active-votes'
-    | '/analytics'
-    | '/api'
     | '/create-proposal'
     | '/my-votes'
     | '/proposals/$proposalId'
@@ -226,8 +186,6 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ActiveVotesRoute: typeof ActiveVotesRoute
-  AnalyticsRoute: typeof AnalyticsRoute
-  ApiRoute: typeof ApiRoute
   CreateProposalRoute: typeof CreateProposalRoute
   MyVotesRoute: typeof MyVotesRoute
   ProposalsProposalIdRoute: typeof ProposalsProposalIdRoute
@@ -238,8 +196,6 @@ export interface RootRouteChildren {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ActiveVotesRoute: ActiveVotesRoute,
-  AnalyticsRoute: AnalyticsRoute,
-  ApiRoute: ApiRoute,
   CreateProposalRoute: CreateProposalRoute,
   MyVotesRoute: MyVotesRoute,
   ProposalsProposalIdRoute: ProposalsProposalIdRoute,
@@ -259,8 +215,6 @@ export const routeTree = rootRoute
       "children": [
         "/",
         "/active-votes",
-        "/analytics",
-        "/api",
         "/create-proposal",
         "/my-votes",
         "/proposals/$proposalId",
@@ -273,12 +227,6 @@ export const routeTree = rootRoute
     },
     "/active-votes": {
       "filePath": "active-votes.tsx"
-    },
-    "/analytics": {
-      "filePath": "analytics.tsx"
-    },
-    "/api": {
-      "filePath": "api.tsx"
     },
     "/create-proposal": {
       "filePath": "create-proposal.tsx"
