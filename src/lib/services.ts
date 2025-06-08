@@ -34,7 +34,7 @@ export async function fetchProposals({
             args: [proposalIds],
         }) as [bigint[], string[], number[], bigint[], bigint[]];
 
-        const [ids, titles, statuses, endTimes, totalVotes] = basicInfo;
+        const [_ids, titles, _statuses, _endTimes, _totalVotes] = basicInfo;
 
         // Step 3: Get detailed info for each proposal in parallel
         const detailedProposalsPromises = proposalIds.map(async (id, index) => {

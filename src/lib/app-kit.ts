@@ -4,8 +4,6 @@ import {
     defineChain,
 } from "@reown/appkit/networks";
 import { WagmiAdapter } from "@reown/appkit-adapter-wagmi";
-import { http } from "wagmi";
-import { getPublicClient } from '@wagmi/core'
 import { createAppKit } from "@reown/appkit/react";
 
 // Define Hardhat local network

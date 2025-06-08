@@ -144,7 +144,7 @@ const CreateProposalPage = () => {
 		}
 	}, [writeError, waitError]);
 
-	const onSubmit = (values: FormValues) => {
+	const onSubmit = () => {
 		setShowDialog(true);
 	};
 
