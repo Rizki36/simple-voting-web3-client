@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useMatch } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -10,6 +10,8 @@ import {
 	ArrowLeft,
 	Share2,
 	AlertCircle,
+	Loader2,
+	CheckCircle,
 } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import {
@@ -18,55 +20,122 @@ import {
 	TooltipProvider,
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
-
-type ProposalStatus = "active" | "ended" | "all";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Skeleton } from "@/components/ui/skeleton";
+import { toast } from "sonner";
+import {
+	useAccount,
+	useReadContract,
+	useWriteContract,
+	useWaitForTransactionReceipt,
+} from "wagmi";
+import { formatDistanceToNow } from "date-fns";
+import { smartContractAddress, smartContractABI } from "@/constants/abi";
+import { fromUnixTimestamp } from "@/lib/date-utils";
+import { truncateAddress } from "@/lib/utils";
 
 const ProposalDetailPage = () => {
 	const { params } = useMatch({
 		from: "/proposals/$proposalId",
 	});
 	const proposalId = params.proposalId;
-
-	// Mock data for UI development
-	const proposal = {
-		id: proposalId,
-		title: "Integrate Layer 2 Solutions",
-		description:
-			"This proposal aims to integrate layer 2 scaling solutions to reduce gas fees and improve transaction speeds across the protocol. By implementing optimistic rollups, we can achieve significant cost savings while maintaining security guarantees.\n\nThe integration would involve:\n\n1. Deploying smart contracts to supported L2 networks\n2. Creating bridges for asset transfers\n3. Updating the frontend to support L2 interactions\n4. Providing documentation for users on how to use L2 features",
-		status: "active" as ProposalStatus,
-		endDate: "2025-06-10T00:00:00Z",
-		votesCount: 142,
-		createdAt: "2025-05-15T00:00:00Z",
-		createdBy: "0x1234...5678",
-		options: ["Approve", "Reject", "Abstain"],
-		results: [70, 25, 5], // Percentages
-		hasVoted: false,
-		discussions: [
-			{
-				id: "1",
-				user: "0xabcd...1234",
-				comment: "This is a great proposal that will help scaling.",
-				timestamp: "2025-05-16T12:30:00Z",
-			},
-			{
-				id: "2",
-				user: "0x7890...4321",
-				comment:
-					"I'm concerned about the security implications. Has this been audited?",
-				timestamp: "2025-05-17T08:45:00Z",
-			},
-		],
-	};
-
 	const [selectedOption, setSelectedOption] = useState<number | null>(null);
-	const [voteSubmitting, setVoteSubmitting] = useState(false);
-	const isActive = proposal.status === "active";
+	const { address, isConnected } = useAccount();
+
+	// Contract read hooks
+	const {
+		data: proposalData,
+		isLoading: isLoadingProposal,
+		error: proposalError,
+	} = useReadContract({
+		address: smartContractAddress as `0x${string}`,
+		abi: smartContractABI,
+		functionName: "getProposal",
+		args: [BigInt(proposalId)],
+	});
+
+	const {
+		data: resultsData,
+		isLoading: isLoadingResults,
+		error: resultsError,
+	} = useReadContract({
+		address: smartContractAddress as `0x${string}`,
+		abi: smartContractABI,
+		functionName: "getProposalResults",
+		args: [BigInt(proposalId)],
+	});
+
+	const {
+		data: voterInfo,
+		isLoading: isLoadingVoterInfo,
+		refetch: refetchVoterInfo,
+	} = useReadContract({
+		address: smartContractAddress as `0x${string}`,
+		abi: smartContractABI,
+		functionName: "getVoterInfo",
+		args: [
+			BigInt(proposalId),
+			address || "0x0000000000000000000000000000000000000000",
+		],
+	});
+
+	// Contract write hook for voting
+	const {
+		writeContract,
+		isPending: isVoting,
+		data: txHash,
+	} = useWriteContract();
+
+	// Transaction receipt hook
+	const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({
+		hash: txHash,
+	});
+
+	// Track combined loading state
+	const isSubmitting = isVoting || isConfirming;
+	const isLoading =
+		isLoadingProposal ||
+		isLoadingResults ||
+		(isConnected && isLoadingVoterInfo);
+	const error = proposalError || resultsError;
+
+	// Parse proposal data
+	const proposal =
+		proposalData && resultsData
+			? {
+					id: proposalId,
+					title: proposalData[1] as string,
+					description: proposalData[2] as string,
+					endDate: fromUnixTimestamp(proposalData[3] as bigint),
+					creator: proposalData[4] as string,
+					status: Number(proposalData[5]) === 0 ? "active" : "ended",
+					votesCount: Number(proposalData[6]),
+					options: resultsData[0] as string[],
+					votes: resultsData[1] as bigint[],
+					totalVotes: resultsData[2] as bigint,
+					hasVoted:
+						isConnected && Array.isArray(voterInfo) && voterInfo[0] === true,
+					userVoteOption:
+						isConnected && Array.isArray(voterInfo) && voterInfo[0] === true
+							? Number(voterInfo[1])
+							: null,
+					results: Array.isArray(resultsData[1])
+						? (resultsData[1] as bigint[]).map((votes) =>
+								resultsData[2] > 0n
+									? Number((votes * 100n) / (resultsData[2] as bigint))
+									: 0,
+							)
+						: [],
+				}
+			: null;
+
+	console.log(proposal);
 
 	// Calculate remaining time for active proposals
 	const getRemainingTime = () => {
-		if (!isActive) return "Ended";
+		if (!proposal) return "";
+		if (proposal.status !== "active") return "Ended";
 
 		const endDate = new Date(proposal.endDate);
 		const now = new Date();
@@ -82,29 +151,97 @@ const ProposalDetailPage = () => {
 		return `${diffHours} hours remaining`;
 	};
 
-	// Format date to human-readable
-	const formatDate = (dateString: string) => {
-		const date = new Date(dateString);
-		return date.toLocaleDateString("en-US", {
-			year: "numeric",
-			month: "short",
-			day: "numeric",
-			hour: "2-digit",
-			minute: "2-digit",
-		});
+	// On successful vote
+	useEffect(() => {
+		if (isSuccess) {
+			toast.success("Vote submitted successfully!");
+			setSelectedOption(null);
+
+			// Refetch voter info and results
+			refetchVoterInfo();
+		}
+	}, [isSuccess, refetchVoterInfo]);
+
+	// Copy proposal link to clipboard
+	const shareProposal = () => {
+		navigator.clipboard.writeText(window.location.href);
+		toast.info("Link copied to clipboard!");
 	};
 
-	const handleVote = () => {
+	// Submit vote to the blockchain
+	const handleVote = async () => {
 		if (selectedOption === null) return;
 
-		setVoteSubmitting(true);
-
-		// Simulate API call
-		setTimeout(() => {
-			setVoteSubmitting(false);
-			// Here we would update the UI to show the user has voted
-		}, 2000);
+		try {
+			writeContract({
+				address: smartContractAddress as `0x${string}`,
+				abi: smartContractABI,
+				functionName: "vote",
+				args: [BigInt(proposalId), BigInt(selectedOption)],
+			});
+		} catch (err) {
+			console.error("Error submitting vote:", err);
+			toast.error("Failed to submit your vote. Please try again.");
+		}
 	};
+
+	// Error state
+	if (error) {
+		return (
+			<div className="container mx-auto px-4 py-6">
+				<Alert variant="destructive">
+					<AlertCircle className="h-4 w-4" />
+					<AlertTitle>Error loading proposal</AlertTitle>
+					<AlertDescription>
+						{error instanceof Error
+							? error.message
+							: "Could not load proposal details"}
+					</AlertDescription>
+				</Alert>
+				<Link to="/proposals">
+					<Button className="mt-4" variant="outline">
+						<ArrowLeft className="mr-2 h-4 w-4" /> Back to Proposals
+					</Button>
+				</Link>
+			</div>
+		);
+	}
+
+	// Loading state
+	if (isLoading || !proposal) {
+		return (
+			<div className="container mx-auto px-4 py-6">
+				<Link
+					to="/proposals"
+					className="inline-flex items-center text-sm text-slate-400 hover:text-white mb-4"
+				>
+					<ArrowLeft className="mr-1 h-4 w-4" />
+					Back to Proposals
+				</Link>
+
+				<div className="bg-slate-800 rounded-lg p-6 mb-6">
+					<Skeleton className="h-8 w-3/4 mb-4" />
+					<Skeleton className="h-4 w-1/3 mb-2" />
+					<Skeleton className="h-4 w-1/4 mb-4" />
+					<div className="space-y-2">
+						<Skeleton className="h-4 w-full" />
+						<Skeleton className="h-4 w-full" />
+						<Skeleton className="h-4 w-3/4" />
+					</div>
+				</div>
+
+				<div className="flex justify-center">
+					<Loader2 className="h-8 w-8 animate-spin text-slate-400" />
+				</div>
+			</div>
+		);
+	}
+
+	const isActive = proposal.status === "active";
+	// TODO: Adjust createdAt based on actual proposal creation date if available
+	const createdAt = new Date(
+		proposal.endDate.getTime() - 7 * 24 * 60 * 60 * 1000,
+	); // Estimate: 1 week before end date
 
 	return (
 		<div className="container mx-auto px-4 py-6">
@@ -139,7 +276,7 @@ const ProposalDetailPage = () => {
 						<TooltipProvider>
 							<Tooltip>
 								<TooltipTrigger asChild>
-									<Button variant="outline" size="icon">
+									<Button variant="outline" size="icon" onClick={shareProposal}>
 										<Share2 className="h-4 w-4" />
 									</Button>
 								</TooltipTrigger>
@@ -149,32 +286,37 @@ const ProposalDetailPage = () => {
 							</Tooltip>
 						</TooltipProvider>
 
-						{proposal.status === "active" && !proposal.hasVoted && (
-							<Button
-								onClick={handleVote}
-								disabled={selectedOption === null || voteSubmitting}
-							>
-								{voteSubmitting ? (
-									<>
-										<Clock className="mr-2 h-4 w-4 animate-spin" />
-										Submitting...
-									</>
-								) : (
-									"Submit Vote"
-								)}
-							</Button>
-						)}
+						{proposal.status === "active" &&
+							!proposal.hasVoted &&
+							isConnected && (
+								<Button
+									onClick={handleVote}
+									disabled={selectedOption === null || isSubmitting}
+								>
+									{isSubmitting ? (
+										<>
+											<Loader2 className="mr-2 h-4 w-4 animate-spin" />
+											Submitting...
+										</>
+									) : (
+										"Submit Vote"
+									)}
+								</Button>
+							)}
 					</div>
 				</div>
 
 				<div className="flex flex-wrap gap-4 text-sm text-slate-400 mb-6">
 					<div className="flex items-center">
 						<Calendar className="mr-1 h-4 w-4" />
-						Created {formatDate(proposal.createdAt)}
+						Created {formatDistanceToNow(createdAt, { addSuffix: true })}
 					</div>
 					<div className="flex items-center">
 						<Users className="mr-1 h-4 w-4" />
 						{proposal.votesCount} votes
+					</div>
+					<div className="flex items-center">
+						By {truncateAddress(proposal.creator)}
 					</div>
 				</div>
 
@@ -190,115 +332,115 @@ const ProposalDetailPage = () => {
 				</div>
 			</div>
 
-			{/* Tabs for Voting and Discussion */}
-			<Tabs defaultValue="vote" className="w-full">
-				<TabsList className="grid w-full grid-cols-2 mb-6">
-					<TabsTrigger value="vote">Vote</TabsTrigger>
-					<TabsTrigger value="discussion">Discussion</TabsTrigger>
-				</TabsList>
+			{/* Voting Section - Removed Tabs */}
+			<Card>
+				<CardContent className="pt-6">
+					<h2 className="text-xl font-semibold mb-4">Cast Your Vote</h2>
 
-				<TabsContent value="vote">
-					<Card>
-						<CardContent className="pt-6">
-							{proposal.hasVoted ? (
-								<div className="bg-blue-900/20 text-blue-400 p-4 rounded-md mb-6 flex items-center">
-									<div className="mr-2 text-blue-400 rounded-full bg-blue-400/20 p-1">
-										<Clock className="h-4 w-4" />
-									</div>
-									<div className="text-sm">
-										You have already voted on this proposal
-									</div>
+					{!isConnected ? (
+						<Alert className="mb-6">
+							<AlertCircle className="h-4 w-4" />
+							<AlertTitle>Wallet not connected</AlertTitle>
+							<AlertDescription>
+								Connect your wallet to vote on this proposal
+							</AlertDescription>
+						</Alert>
+					) : proposal.hasVoted ? (
+						<div className="bg-blue-900/20 text-blue-400 p-4 rounded-md mb-6 flex items-center">
+							<div className="mr-2 text-blue-400 rounded-full bg-blue-400/20 p-1">
+								<CheckCircle className="h-4 w-4" />
+							</div>
+							<div>
+								<div className="font-medium">
+									You voted for:{" "}
+									{proposal.options[proposal.userVoteOption || 0]}
 								</div>
-							) : proposal.status === "ended" ? (
-								<div className="bg-slate-700/20 text-slate-400 p-4 rounded-md mb-6 flex items-center">
-									<AlertCircle className="h-4 w-4 mr-2" />
-									<div className="text-sm">This vote has ended</div>
+								<div className="text-sm">
+									Your vote has been recorded on the blockchain
 								</div>
-							) : (
-								<div className="space-y-4 mb-6">
-									<h3 className="text-lg font-medium">Cast your vote</h3>
-									<div className="grid gap-2">
-										{proposal.options.map((option, i) => (
-											// biome-ignore lint/a11y/useKeyWithClickEvents: <explanation>
-											<div
-												key={i}
-												className={`p-4 rounded-md border cursor-pointer transition-all ${
-													selectedOption === i
-														? "border-blue-500 bg-blue-500/10"
-														: "border-slate-700 hover:border-slate-600"
-												}`}
-												onClick={() => setSelectedOption(i)}
-											>
-												<div className="flex items-center">
-													<div
-														className={`w-4 h-4 rounded-full mr-2 border-2 flex items-center justify-center ${
-															selectedOption === i
-																? "border-blue-500"
-																: "border-slate-600"
-														}`}
-													>
-														{selectedOption === i && (
-															<div className="w-2 h-2 rounded-full bg-blue-500"></div>
-														)}
-													</div>
-													{option}
-												</div>
-											</div>
-										))}
-									</div>
-								</div>
-							)}
-
-							<h3 className="text-lg font-medium mb-4">Current Results</h3>
-							<div className="space-y-4">
+							</div>
+						</div>
+					) : proposal.status === "ended" ? (
+						<div className="bg-slate-700/20 text-slate-400 p-4 rounded-md mb-6 flex items-center">
+							<AlertCircle className="h-4 w-4 mr-2" />
+							<div className="text-sm">This vote has ended</div>
+						</div>
+					) : (
+						<div className="space-y-4 mb-6">
+							<h3 className="text-lg font-medium">Cast your vote</h3>
+							<div className="grid gap-2">
 								{proposal.options.map((option, i) => (
-									<div key={i} className="space-y-2">
-										<div className="flex justify-between text-sm">
-											<span>{option}</span>
-											<span className="font-medium">
-												{proposal.results[i]}%
-											</span>
-										</div>
-										<Progress value={proposal.results[i]} className="h-2" />
-									</div>
-								))}
-							</div>
-						</CardContent>
-					</Card>
-				</TabsContent>
-
-				<TabsContent value="discussion">
-					<Card>
-						<CardContent className="pt-6">
-							<h3 className="text-lg font-medium mb-4">Discussion</h3>
-
-							<div className="space-y-4">
-								{proposal.discussions.map((discussion) => (
 									<div
-										key={discussion.id}
-										className="border-b border-slate-700 pb-4"
+										key={i}
+										className={`p-4 rounded-md border cursor-pointer transition-all ${
+											selectedOption === i
+												? "border-blue-500 bg-blue-500/10"
+												: "border-slate-700 hover:border-slate-600"
+										}`}
+										onClick={() => setSelectedOption(i)}
+										// biome-ignore lint/a11y/useSemanticElements: <explanation>
+										role="button"
+										tabIndex={0}
+										onKeyDown={(e) => {
+											if (e.key === "Enter" || e.key === " ") {
+												setSelectedOption(i);
+											}
+										}}
 									>
-										<div className="flex justify-between mb-2">
-											<div className="font-medium text-sm">
-												{discussion.user}
+										<div className="flex items-center">
+											<div
+												className={`w-4 h-4 rounded-full mr-2 border-2 flex items-center justify-center ${
+													selectedOption === i
+														? "border-blue-500"
+														: "border-slate-600"
+												}`}
+											>
+												{selectedOption === i && (
+													<div className="w-2 h-2 rounded-full bg-blue-500"></div>
+												)}
 											</div>
-											<div className="text-xs text-slate-400">
-												{formatDate(discussion.timestamp)}
-											</div>
+											{option}
 										</div>
-										<p className="text-sm">{discussion.comment}</p>
 									</div>
 								))}
 							</div>
+						</div>
+					)}
 
-							{/* Simplified comment form - would be expanded in real implementation */}
-							<div className="mt-6">
-								<Button className="w-full">Connect Wallet to Comment</Button>
-							</div>
-						</CardContent>
-					</Card>
-				</TabsContent>
-			</Tabs>
+					<h3 className="text-lg font-medium mb-4">Current Results</h3>
+					<div className="space-y-4">
+						{proposal.options.map((option, i) => {
+							// Find leading option
+							const maxVotes = Math.max(...proposal.results);
+							const isLeading =
+								proposal.results[i] === maxVotes && maxVotes > 0;
+
+							return (
+								<div key={i} className="space-y-2">
+									<div className="flex justify-between text-sm">
+										<span>
+											{option}
+											{isLeading && proposal.status === "ended" && (
+												<Badge className="ml-2 bg-green-800">Winner</Badge>
+											)}
+											{isLeading && proposal.status === "active" && (
+												<Badge className="ml-2 bg-blue-800">Leading</Badge>
+											)}
+										</span>
+										<span className="font-medium">
+											{proposal.results[i]}% ({Number(proposal.votes[i])} votes)
+										</span>
+									</div>
+									<Progress
+										value={proposal.results[i]}
+										className={`h-2 ${isLeading ? "bg-slate-600" : ""}`}
+									/>
+								</div>
+							);
+						})}
+					</div>
+				</CardContent>
+			</Card>
 		</div>
 	);
 };
