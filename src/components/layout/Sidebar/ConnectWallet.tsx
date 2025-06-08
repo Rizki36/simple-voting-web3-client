@@ -1,4 +1,3 @@
-import { Button } from "@/components/ui/button";
 import ConnectButton from "./ConnectButton";
 
 const ConnectWallet = () => {
