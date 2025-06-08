@@ -2,68 +2,95 @@ import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search } from "lucide-react";
+import { Search, AlertCircle, Loader2 } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { useAccount } from "wagmi";
 import MyVoteCard from "./MyVoteCard";
 import MyVotesEmptyState from "./MyVotesEmptyState";
+import { useMyVotesQuery } from "@/hooks/useMyVotesQuery";
 
 type ProposalStatus = "active" | "ended" | "all";
 
 const MyVotesPage = () => {
 	const [searchQuery, setSearchQuery] = useState("");
-	const [_isLoading, setIsLoading] = useState(false);
 	const [filter, setFilter] = useState<ProposalStatus>("all");
+	const [currentPage, setCurrentPage] = useState(1);
+	const { isConnected } = useAccount();
 
-	// Mock data for UI development
-	const myVotes = [
-		{
-			id: "1",
-			proposalId: "12",
-			proposalTitle: "Integrate Layer 2 Solutions",
-			optionVoted: "Approve",
-			votedAt: "2025-05-18T14:32:00Z",
-			status: "active" as ProposalStatus,
-			endDate: "2025-06-10T00:00:00Z",
-			results: [70, 25, 5], // Percentages
-		},
-		{
-			id: "2",
-			proposalId: "8",
-			proposalTitle: "Treasury Diversification Plan",
-			optionVoted: "Reject",
-			votedAt: "2025-05-15T09:45:00Z",
-			status: "active" as ProposalStatus,
-			endDate: "2025-06-05T00:00:00Z",
-			results: [65, 35], // Percentages
-		},
-		{
-			id: "3",
-			proposalId: "5",
-			proposalTitle: "Governance Parameter Updates",
-			optionVoted: "For",
-			votedAt: "2025-05-02T16:21:00Z",
-			status: "ended" as ProposalStatus,
-			endDate: "2025-05-20T00:00:00Z",
-			results: [82, 18], // Percentages
-		},
-	];
+	// Get user's votes from the blockchain
+	const { data: myVotes, isLoading, error } = useMyVotesQuery();
+
+	const itemsPerPage = 5;
 
 	const handleSearch = (e: React.FormEvent) => {
 		e.preventDefault();
-		setIsLoading(true);
-
-		// Simulate API call
-		setTimeout(() => {
-			setIsLoading(false);
-		}, 800);
+		setCurrentPage(1); // Reset to first page on new search
 	};
 
-	const filteredVotes = myVotes.filter((vote) => {
-		const matchesStatus = filter === "all" || vote.status === filter;
-		const matchesSearch =
-			vote.proposalTitle.toLowerCase().includes(searchQuery.toLowerCase()) ||
-			vote.proposalId.toLowerCase().includes(searchQuery.toLowerCase());
-		return matchesStatus && matchesSearch;
-	});
+	// Apply filters to the vote data
+	const filteredVotes = myVotes
+		? myVotes.filter((vote) => {
+				const matchesStatus = filter === "all" || vote.status === filter;
+				const matchesSearch =
+					vote.proposalTitle
+						.toLowerCase()
+						.includes(searchQuery.toLowerCase()) ||
+					vote.proposalId.toLowerCase().includes(searchQuery.toLowerCase());
+				return matchesStatus && matchesSearch;
+			})
+		: [];
+
+	// Paginate results
+	const totalPages = Math.max(
+		1,
+		Math.ceil(filteredVotes.length / itemsPerPage),
+	);
+	const paginatedVotes = filteredVotes.slice(
+		(currentPage - 1) * itemsPerPage,
+		currentPage * itemsPerPage,
+	);
+
+	// Handle pagination
+	const goToPage = (page: number) => {
+		setCurrentPage(Math.max(1, Math.min(page, totalPages)));
+	};
+
+	if (!isConnected) {
+		return (
+			<div className="container mx-auto px-4 py-6">
+				<Alert className="mb-6">
+					<AlertCircle className="h-4 w-4" />
+					<AlertTitle>Wallet not connected</AlertTitle>
+					<AlertDescription>
+						Connect your wallet to see your voting history.
+					</AlertDescription>
+				</Alert>
+			</div>
+		);
+	}
+
+	if (error) {
+		return (
+			<div className="container mx-auto px-4 py-6">
+				<Alert variant="destructive" className="mb-6">
+					<AlertCircle className="h-4 w-4" />
+					<AlertTitle>Error loading votes</AlertTitle>
+					<AlertDescription>
+						{error instanceof Error
+							? error.message
+							: "Failed to load your votes"}
+					</AlertDescription>
+				</Alert>
+				<Button
+					variant="outline"
+					onClick={() => window.location.reload()}
+					className="mt-4"
+				>
+					Retry
+				</Button>
+			</div>
+		);
+	}
 
 	return (
 		<div className="container mx-auto px-4 py-6">
@@ -74,7 +101,11 @@ const MyVotesPage = () => {
 			{/* Filter Tabs */}
 			<Tabs
 				defaultValue="all"
-				onValueChange={(value) => setFilter(value as ProposalStatus)}
+				value={filter}
+				onValueChange={(value) => {
+					setFilter(value as ProposalStatus);
+					setCurrentPage(1); // Reset to first page on filter change
+				}}
 			>
 				<div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
 					<TabsList>
@@ -96,54 +127,107 @@ const MyVotesPage = () => {
 					</form>
 				</div>
 
-				<TabsContent value="all" className="mt-0">
-					{filteredVotes.length > 0 ? (
-						<div className="space-y-4">
-							{filteredVotes.map((vote) => (
-								<MyVoteCard key={vote.id} vote={vote} />
-							))}
+				{isLoading ? (
+					<div className="flex flex-col items-center justify-center py-12">
+						<Loader2 className="h-8 w-8 animate-spin text-slate-400 mb-4" />
+						<p className="text-slate-400">Loading your votes...</p>
+					</div>
+				) : (
+					<>
+						<div className="mb-4 text-sm text-slate-400">
+							{filteredVotes.length} vote{filteredVotes.length !== 1 ? "s" : ""}{" "}
+							found
 						</div>
-					) : (
-						<MyVotesEmptyState />
-					)}
-				</TabsContent>
 
-				<TabsContent value="active" className="mt-0">
-					{filteredVotes.length > 0 ? (
-						<div className="space-y-4">
-							{filteredVotes.map((vote) => (
-								<MyVoteCard key={vote.id} vote={vote} />
-							))}
-						</div>
-					) : (
-						<MyVotesEmptyState status="active" />
-					)}
-				</TabsContent>
+						<TabsContent value="all" className="mt-0">
+							{paginatedVotes.length > 0 ? (
+								<div className="space-y-4">
+									{paginatedVotes.map((vote) => (
+										<MyVoteCard key={vote.id} vote={vote} />
+									))}
+								</div>
+							) : (
+								<MyVotesEmptyState />
+							)}
+						</TabsContent>
 
-				<TabsContent value="ended" className="mt-0">
-					{filteredVotes.length > 0 ? (
-						<div className="space-y-4">
-							{filteredVotes.map((vote) => (
-								<MyVoteCard key={vote.id} vote={vote} />
-							))}
-						</div>
-					) : (
-						<MyVotesEmptyState status="ended" />
-					)}
-				</TabsContent>
+						<TabsContent value="active" className="mt-0">
+							{paginatedVotes.length > 0 ? (
+								<div className="space-y-4">
+									{paginatedVotes.map((vote) => (
+										<MyVoteCard key={vote.id} vote={vote} />
+									))}
+								</div>
+							) : (
+								<MyVotesEmptyState status="active" />
+							)}
+						</TabsContent>
+
+						<TabsContent value="ended" className="mt-0">
+							{paginatedVotes.length > 0 ? (
+								<div className="space-y-4">
+									{paginatedVotes.map((vote) => (
+										<MyVoteCard key={vote.id} vote={vote} />
+									))}
+								</div>
+							) : (
+								<MyVotesEmptyState status="ended" />
+							)}
+						</TabsContent>
+					</>
+				)}
 			</Tabs>
 
-			{/* Pagination - Basic version */}
-			{filteredVotes.length > 0 && (
+			{/* Pagination */}
+			{!isLoading && filteredVotes.length > itemsPerPage && (
 				<div className="flex justify-center mt-8">
 					<div className="flex gap-2">
-						<Button variant="outline" size="sm" disabled>
+						<Button
+							variant="outline"
+							size="sm"
+							onClick={() => goToPage(currentPage - 1)}
+							disabled={currentPage === 1}
+						>
 							Previous
 						</Button>
-						<Button variant="outline" size="sm" className="bg-slate-800">
-							1
-						</Button>
-						<Button variant="outline" size="sm">
+
+						{Array.from({ length: Math.min(totalPages, 5) }).map((_, index) => {
+							// Show at most 5 page buttons
+							let pageNum = currentPage;
+
+							if (totalPages <= 5) {
+								// If 5 or fewer pages, show all pages
+								pageNum = index + 1;
+							} else if (currentPage <= 3) {
+								// If near the start, show pages 1-5
+								pageNum = index + 1;
+							} else if (currentPage >= totalPages - 2) {
+								// If near the end, show the last 5 pages
+								pageNum = totalPages - 4 + index;
+							} else {
+								// Otherwise, show 2 before current and 2 after
+								pageNum = currentPage - 2 + index;
+							}
+
+							return (
+								<Button
+									key={pageNum}
+									variant="outline"
+									size="sm"
+									className={currentPage === pageNum ? "bg-slate-800" : ""}
+									onClick={() => goToPage(pageNum)}
+								>
+									{pageNum}
+								</Button>
+							);
+						})}
+
+						<Button
+							variant="outline"
+							size="sm"
+							onClick={() => goToPage(currentPage + 1)}
+							disabled={currentPage === totalPages}
+						>
 							Next
 						</Button>
 					</div>

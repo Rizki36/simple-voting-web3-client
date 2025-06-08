@@ -1,33 +1,54 @@
+import { FileText, Vote } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "@tanstack/react-router";
-import { Vote } from "lucide-react";
 
-type EmptyStateProps = {
-	status?: "active" | "ended" | "all";
-};
+interface MyVotesEmptyStateProps {
+	status?: "active" | "ended";
+}
 
-const MyVotesEmptyState = ({ status = "all" }: EmptyStateProps) => {
-	// Customize message based on filter
-	const getMessage = () => {
-		switch (status) {
-			case "active":
-				return "You haven't voted on any active proposals yet.";
-			case "ended":
-				return "You haven't voted on any ended proposals.";
-			default:
-				return "You haven't cast any votes yet.";
+const MyVotesEmptyState = ({ status }: MyVotesEmptyStateProps) => {
+	const renderContent = () => {
+		if (status === "active") {
+			return {
+				icon: <Vote className="h-12 w-12 text-slate-600" />,
+				title: "No Active Votes",
+				description:
+					"You haven't voted on any active proposals yet. Explore current proposals and make your voice heard.",
+				buttonText: "Browse Active Proposals",
+				buttonLink: "/proposals?status=active",
+			};
 		}
+
+		if (status === "ended") {
+			return {
+				icon: <FileText className="h-12 w-12 text-slate-600" />,
+				title: "No Ended Votes",
+				description:
+					"You haven't participated in any proposals that have ended yet.",
+				buttonText: "View All Proposals",
+				buttonLink: "/proposals",
+			};
+		}
+
+		return {
+			icon: <Vote className="h-12 w-12 text-slate-600" />,
+			title: "No Votes Found",
+			description:
+				"You haven't voted on any proposals yet. Cast your first vote to see your voting history here.",
+			buttonText: "Explore Proposals",
+			buttonLink: "/proposals",
+		};
 	};
 
+	const content = renderContent();
+
 	return (
-		<div className="flex flex-col items-center justify-center py-12 px-4 text-center bg-slate-800/40 rounded-lg">
-			<div className="bg-slate-700/50 p-4 rounded-full mb-4">
-				<Vote className="h-8 w-8 text-slate-400" />
-			</div>
-			<h3 className="text-xl font-medium mb-2">No votes found</h3>
-			<p className="text-slate-400 mb-6 max-w-md">{getMessage()}</p>
-			<Link to="/proposals">
-				<Button>Browse Active Proposals</Button>
+		<div className="flex flex-col items-center justify-center py-12 px-4 text-center">
+			<div className="rounded-full bg-slate-800 p-4 mb-4">{content.icon}</div>
+			<h3 className="text-xl font-medium mb-2">{content.title}</h3>
+			<p className="text-slate-400 mb-6 max-w-md">{content.description}</p>
+			<Link to={content.buttonLink}>
+				<Button>{content.buttonText}</Button>
 			</Link>
 		</div>
 	);
