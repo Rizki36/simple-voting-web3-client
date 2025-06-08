@@ -1,26 +1,21 @@
 import { Button } from "@/components/ui/button";
-import { Link } from "@tanstack/react-router";
 import { Vote } from "lucide-react";
+import { Link } from "@tanstack/react-router";
 
 const NoActiveVotes = () => {
 	return (
-		<div className="flex flex-col items-center justify-center py-12 px-4 text-center bg-slate-800/40 rounded-lg">
-			<div className="bg-slate-700/50 p-4 rounded-full mb-4">
-				<Vote className="h-8 w-8 text-slate-400" />
+		<div className="py-12 text-center">
+			<div className="bg-slate-800 rounded-full p-3 w-12 h-12 mx-auto mb-4 flex items-center justify-center">
+				<Vote className="h-6 w-6 text-slate-400" />
 			</div>
-			<h3 className="text-xl font-medium mb-2">No active votes found</h3>
-			<p className="text-slate-400 mb-6 max-w-md">
-				There are currently no active votes to display. Check back later or
-				browse all proposals.
+			<h3 className="text-xl font-medium mb-2">No Active Votes Found</h3>
+			<p className="text-slate-400 mb-6 max-w-md mx-auto">
+				You haven't voted on any active proposals yet. Browse available
+				proposals and cast your vote to see them here.
 			</p>
-			<div className="flex gap-4">
-				<Link to="/proposals">
-					<Button variant="outline">Browse Proposals</Button>
-				</Link>
-				<Link to="/create-proposal">
-					<Button>Create Proposal</Button>
-				</Link>
-			</div>
+			<Link to="/proposals">
+				<Button>Browse Proposals</Button>
+			</Link>
 		</div>
 	);
 };
