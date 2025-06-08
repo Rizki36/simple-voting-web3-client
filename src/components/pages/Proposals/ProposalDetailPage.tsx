@@ -130,8 +130,6 @@ const ProposalDetailPage = () => {
 				}
 			: null;
 
-	console.log(proposal);
-
 	// Calculate remaining time for active proposals
 	const getRemainingTime = () => {
 		if (!proposal) return "";
@@ -285,24 +283,6 @@ const ProposalDetailPage = () => {
 								</TooltipContent>
 							</Tooltip>
 						</TooltipProvider>
-
-						{proposal.status === "active" &&
-							!proposal.hasVoted &&
-							isConnected && (
-								<Button
-									onClick={handleVote}
-									disabled={selectedOption === null || isSubmitting}
-								>
-									{isSubmitting ? (
-										<>
-											<Loader2 className="mr-2 h-4 w-4 animate-spin" />
-											Submitting...
-										</>
-									) : (
-										"Submit Vote"
-									)}
-								</Button>
-							)}
 					</div>
 				</div>
 
@@ -404,6 +384,25 @@ const ProposalDetailPage = () => {
 									</div>
 								))}
 							</div>
+
+							{proposal.status === "active" &&
+								!proposal.hasVoted &&
+								isConnected && (
+									<Button
+										className="w-full"
+										onClick={handleVote}
+										disabled={selectedOption === null || isSubmitting}
+									>
+										{isSubmitting ? (
+											<>
+												<Loader2 className="mr-2 h-4 w-4 animate-spin" />
+												Submitting...
+											</>
+										) : (
+											"Submit Vote"
+										)}
+									</Button>
+								)}
 						</div>
 					)}
 
@@ -431,6 +430,7 @@ const ProposalDetailPage = () => {
 											{proposal.results[i]}% ({Number(proposal.votes[i])} votes)
 										</span>
 									</div>
+
 									<Progress
 										value={proposal.results[i]}
 										className={`h-2 ${isLeading ? "bg-slate-600" : ""}`}
