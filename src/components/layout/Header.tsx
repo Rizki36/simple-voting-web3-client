@@ -1,6 +1,6 @@
-import { Search, Settings, Plus, Copy, Check, Coins } from "lucide-react";
+import { Plus, Copy, Check, Coins } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+import { cn, formatBalance } from "@/lib/utils";
 import { useAppKitAccount, useAppKitBalance } from "@reown/appkit/react";
 import { useEffect, useState } from "react";
 import {
@@ -10,12 +10,19 @@ import {
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
 import type { AdapterBlueprint } from "@reown/appkit/adapters";
+import { Link, useRouterState } from "@tanstack/react-router";
 
 type HeaderProps = {
 	className?: string;
 };
 
 const Header = ({ className }: HeaderProps) => {
+	const currentPath = useRouterState({
+		select: (state) => state.location.pathname,
+	});
+
+	const isCreateProposalPage = currentPath === "/create-proposal";
+
 	const { address, isConnected } = useAppKitAccount();
 	const { fetchBalance } = useAppKitBalance();
 	const [balance, setBalance] = useState<
@@ -30,18 +37,6 @@ const Header = ({ className }: HeaderProps) => {
 			});
 		}
 	}, [isConnected]);
-
-	const handleCreateProposal = () => {
-		console.log("Create proposal clicked");
-	};
-
-	const handleSearchClick = () => {
-		console.log("Search clicked");
-	};
-
-	const handleSettingsClick = () => {
-		console.log("Settings clicked");
-	};
 
 	const handleCopyAddress = () => {
 		if (address) {
@@ -73,6 +68,25 @@ const Header = ({ className }: HeaderProps) => {
 			)}
 		>
 			<div className="flex items-center gap-2">
+				{/* Only show Create Proposal button if NOT on create proposal page */}
+				{!isCreateProposalPage && (
+					<Link to="/create-proposal">
+						<Button
+							size="sm"
+							variant="secondary"
+							className="rounded-full bg-slate-800 hover:bg-slate-700 gap-1 px-2 md:px-3"
+							aria-label="Create new proposal"
+						>
+							<span className="text-sm font-medium hidden sm:inline">
+								Create Proposal
+							</span>
+							<Plus className="h-4 w-4" />
+						</Button>
+					</Link>
+				)}
+			</div>
+
+			<div className="flex items-center gap-2 md:gap-4">
 				{isConnected && address && (
 					<>
 						<span className="text-sm text-slate-400 hidden md:inline">
@@ -106,33 +120,24 @@ const Header = ({ className }: HeaderProps) => {
 						</div>
 					</>
 				)}
-			</div>
 
-			<div className="flex items-center gap-2 md:gap-4">
-				<Button
-					size="sm"
-					variant="secondary"
-					className="rounded-full bg-slate-800 hover:bg-slate-700 gap-1 text-background/60 px-2 md:px-3"
-					onClick={handleCreateProposal}
-					aria-label="Create new proposal"
-				>
-					<span className="text-sm font-medium hidden sm:inline">
-						Create Proposal
-					</span>
-					<Plus className="h-4 w-4" />
-				</Button>
 				<TooltipProvider>
 					<Tooltip>
 						<TooltipTrigger asChild>
-							<div className="flex items-center gap-1 bg-slate-800 rounded-full p-1 pr-1 md:pr-2">
+							<div className="flex items-center gap-1 bg-slate-800 rounded-full p-1">
 								<div
 									className={`w-6 h-6 ${getTokenColor(balance?.symbol)} rounded-full flex items-center justify-center text-xs`}
 								>
 									<Coins className="h-3 w-3 text-white" />
 								</div>
-								<span className="text-sm hidden md:inline">
-									{balance ? `${balance.balance} ${balance.symbol}` : "..."}
-								</span>
+
+								{balance ? (
+									<span className="text-sm hidden md:inline mr-1">{`${formatBalance(
+										balance.balance,
+									)} ${balance.symbol}`}</span>
+								) : (
+									""
+								)}
 							</div>
 						</TooltipTrigger>
 						<TooltipContent side="bottom">
@@ -140,23 +145,6 @@ const Header = ({ className }: HeaderProps) => {
 						</TooltipContent>
 					</Tooltip>
 				</TooltipProvider>
-				<Button
-					size="icon"
-					variant="ghost"
-					onClick={handleSearchClick}
-					aria-label="Search"
-					className="hidden sm:flex"
-				>
-					<Search className="h-5 w-5" />
-				</Button>
-				<Button
-					size="icon"
-					variant="ghost"
-					onClick={handleSettingsClick}
-					aria-label="Settings"
-				>
-					<Settings className="h-5 w-5" />
-				</Button>
 			</div>
 		</header>
 	);
