@@ -10,8 +10,8 @@ import {
 	Loader2,
 } from "lucide-react";
 import ActiveVoteItem from "./ActiveVoteItem";
-import { useActiveVotes } from "@/hooks/useActiveVotes";
 import { useAccount } from "wagmi";
+import useActiveVoteListQuery from "@/hooks/useActiveVoteListQuery";
 
 type SidebarItemType = {
 	icon: LucideIcon;
@@ -23,7 +23,7 @@ type SidebarItemType = {
 
 const Sidebar = () => {
 	const { isConnected } = useAccount();
-	const { activeVotes, isLoading } = useActiveVotes();
+	const { data: activeVotes = [], isLoading } = useActiveVoteListQuery();
 	const currentPath = useRouterState({
 		select: (state) => state.location.pathname,
 	});
@@ -130,10 +130,6 @@ const Sidebar = () => {
 							/>
 						))
 				)}
-
-				<div className="text-xs text-slate-500 text-center py-2">
-					Connect wallet to see your votes
-				</div>
 
 				{activeVotes.length > 3 && (
 					<Link

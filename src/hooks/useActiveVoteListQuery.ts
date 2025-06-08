@@ -1,8 +1,8 @@
 import { useAccount, usePublicClient } from "wagmi";
+import useProposalsQuery from "./useProposalListQuery";
 import { useQuery } from "@tanstack/react-query";
 import { smartContractAddress, smartContractABI } from "@/constants/abi";
 import { readContract } from "viem/actions";
-import useProposalsQuery from "./useProposalListQuery";
 
 type ActiveVote = {
     id: string;
@@ -12,22 +12,17 @@ type ActiveVote = {
     endTime: Date;
 };
 
-export function useActiveVotes() {
+const useActiveVoteListQuery = () => {
     const { address, isConnected } = useAccount();
     const publicClient = usePublicClient();
 
     // First fetch all proposals
     const {
         data: proposals,
-        isLoading: isProposalsLoading,
     } = useProposalsQuery()
 
     // Then fetch user votes for these proposals
-    const {
-        data: activeVotes,
-        isLoading,
-        error,
-    } = useQuery({
+    return useQuery({
         queryKey: ["activeVotes", address],
         queryFn: async (): Promise<ActiveVote[]> => {
             if (!address || !proposals || !publicClient) return [];
@@ -65,12 +60,8 @@ export function useActiveVotes() {
             return results.filter(Boolean) as ActiveVote[];
         },
         enabled: isConnected && !!address && !!proposals && !!publicClient,
-        staleTime: 60 * 1000, // 1 minute
     });
 
-    return {
-        activeVotes: activeVotes || [],
-        isLoading: isProposalsLoading || isLoading,
-        error,
-    };
-}
+};
+
+export default useActiveVoteListQuery;
