@@ -18,17 +18,13 @@ const ConnectWallet = () => {
 				</span>
 			</div>
 
-			<h3 className="text-xl font-medium mb-1">Liquid Voting Portfolio</h3>
+			<h3 className="text-xl font-medium mb-1">Decentralized Governance</h3>
 			<p className="text-sm text-slate-400 mb-6">
-				Apply AI algorithms to help you make smarter investments with Ethereum
-				Liquid Staking
+				Participate in transparent blockchain voting and help shape collective
+				decisions through secure, verifiable proposals
 			</p>
 
 			<ConnectButton />
-
-			<Button className="w-full" variant="ghost">
-				Enter a Wallet Address
-			</Button>
 		</div>
 	);
 };
