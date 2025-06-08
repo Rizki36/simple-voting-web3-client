@@ -5,7 +5,6 @@ import Header from "./Header";
 import { Outlet } from "@tanstack/react-router";
 import { ThemeProvider } from "../ThemeProvider";
 import ConnectWallet from "./Sidebar/ConnectWallet";
-import InvestmentPeriod from "./Sidebar/InvestmentPeriod";
 import { useState } from "react";
 import { X, Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -71,7 +70,6 @@ const RootLayout = () => {
 						{/* Right Sidebar - stacks below on mobile/tablet */}
 						<div className="w-full lg:w-72 lg:ml-6 space-y-6">
 							<ConnectWallet />
-							<InvestmentPeriod />
 						</div>
 					</main>
 				</div>
