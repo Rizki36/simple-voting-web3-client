@@ -19,4 +19,7 @@ export default defineConfig({
 	build: {
 		sourcemap: true,
 	},
+	optimizeDeps: {
+		include: ['wagmi', 'viem', '@tanstack/react-query'],
+	},
 });
