@@ -34,6 +34,7 @@ import { formatDistanceToNow } from "date-fns";
 import { smartContractAddress, smartContractABI } from "@/constants/abi";
 import { fromUnixTimestamp } from "@/lib/date-utils";
 import { truncateAddress } from "@/lib/utils";
+import useProposalCreationTime from "@/hooks/useProposalCreationTime";
 
 const ProposalDetailPage = () => {
 	const { params } = useMatch({
@@ -87,6 +88,9 @@ const ProposalDetailPage = () => {
 		data: txHash,
 	} = useWriteContract();
 
+	const { data: creationTimestamp, isLoading: isLoadingCreationTime } =
+		useProposalCreationTime(proposalId);
+
 	// Transaction receipt hook
 	const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({
 		hash: txHash,
@@ -105,15 +109,15 @@ const ProposalDetailPage = () => {
 		proposalData && resultsData
 			? {
 					id: proposalId,
-					title: proposalData[1] as string,
-					description: proposalData[2] as string,
-					endDate: fromUnixTimestamp(proposalData[3] as bigint),
-					creator: proposalData[4] as string,
+					title: proposalData[1],
+					description: proposalData[2],
+					endDate: fromUnixTimestamp(proposalData[3]),
+					creator: proposalData[4],
 					status: Number(proposalData[5]) === 0 ? "active" : "ended",
 					votesCount: Number(proposalData[6]),
-					options: resultsData[0] as string[],
-					votes: resultsData[1] as bigint[],
-					totalVotes: resultsData[2] as bigint,
+					options: resultsData[0],
+					votes: resultsData[1],
+					totalVotes: resultsData[2],
 					hasVoted:
 						isConnected && Array.isArray(voterInfo) && voterInfo[0] === true,
 					userVoteOption:
@@ -121,9 +125,9 @@ const ProposalDetailPage = () => {
 							? Number(voterInfo[1])
 							: null,
 					results: Array.isArray(resultsData[1])
-						? (resultsData[1] as bigint[]).map((votes) =>
+						? resultsData[1].map((votes) =>
 								resultsData[2] > 0n
-									? Number((votes * 100n) / (resultsData[2] as bigint))
+									? Number((votes * 100n) / resultsData[2])
 									: 0,
 							)
 						: [],
@@ -158,7 +162,7 @@ const ProposalDetailPage = () => {
 			// Refetch voter info and results
 			refetchVoterInfo();
 		}
-	}, [isSuccess, refetchVoterInfo]);
+	}, [isSuccess]);
 
 	// Copy proposal link to clipboard
 	const shareProposal = () => {
@@ -236,10 +240,6 @@ const ProposalDetailPage = () => {
 	}
 
 	const isActive = proposal.status === "active";
-	// TODO: Adjust createdAt based on actual proposal creation date if available
-	const createdAt = new Date(
-		proposal.endDate.getTime() - 7 * 24 * 60 * 60 * 1000,
-	); // Estimate: 1 week before end date
 
 	return (
 		<div className="container mx-auto px-4 py-6">
@@ -287,10 +287,21 @@ const ProposalDetailPage = () => {
 				</div>
 
 				<div className="flex flex-wrap gap-4 text-sm text-slate-400 mb-6">
-					<div className="flex items-center">
-						<Calendar className="mr-1 h-4 w-4" />
-						Created {formatDistanceToNow(createdAt, { addSuffix: true })}
-					</div>
+					{isLoadingCreationTime ? (
+						<div className="flex items-center">
+							<Calendar className="mr-1 h-4 w-4" />
+							<span className="flex items-center">
+								Created <Loader2 className="ml-1 h-3 w-3 animate-spin" />
+							</span>
+						</div>
+					) : creationTimestamp ? (
+						<div className="flex items-center">
+							<Calendar className="mr-1 h-4 w-4" />
+							Created{" "}
+							{formatDistanceToNow(creationTimestamp, { addSuffix: true })}
+						</div>
+					) : null}
+
 					<div className="flex items-center">
 						<Users className="mr-1 h-4 w-4" />
 						{proposal.votesCount} votes
@@ -312,7 +323,6 @@ const ProposalDetailPage = () => {
 				</div>
 			</div>
 
-			{/* Voting Section - Removed Tabs */}
 			<Card>
 				<CardContent className="pt-6">
 					<h2 className="text-xl font-semibold mb-4">Cast Your Vote</h2>
