@@ -2,77 +2,51 @@ import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Search, Calendar, TrendingUp, Clock } from "lucide-react";
+import {
+	Search,
+	Calendar,
+	TrendingUp,
+	Clock,
+	Loader2,
+	AlertCircle,
+} from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import VoteCard from "./VoteCard";
 import NoActiveVotes from "./NoActiveVotes";
+import { useAccount } from "wagmi";
+import useActiveVoteListQuery from "@/hooks/useActiveVoteListQuery";
 
 type SortOption = "endingSoon" | "mostVotes" | "newest";
 
 const ActiveVotesPage = () => {
 	const [searchQuery, setSearchQuery] = useState("");
 	const [sortOption, setSortOption] = useState<SortOption>("endingSoon");
-	const [_isLoading, setIsLoading] = useState(false);
+	const { isConnected } = useAccount();
 
-	// Mock active votes data for UI development
-	const activeVotes = [
-		{
-			id: "1",
-			title: "Integrate Layer 2 Solutions",
-			description:
-				"Proposal to integrate layer 2 scaling solutions to reduce gas fees and improve transaction speeds.",
-			endDate: "2025-06-10T00:00:00Z",
-			votesCount: 142,
-			createdAt: "2025-05-15T00:00:00Z",
-			options: ["Approve", "Reject", "Abstain"],
-			results: [70, 25, 5], // Percentages
-			userHasVoted: true,
-			userVoteOption: 0,
-		},
-		{
-			id: "2",
-			title: "Treasury Diversification Plan",
-			description:
-				"Proposal to diversify the protocol's treasury by allocating funds to different assets to reduce risk.",
-			endDate: "2025-06-05T00:00:00Z",
-			votesCount: 256,
-			createdAt: "2025-05-12T00:00:00Z",
-			options: ["Approve", "Reject"],
-			results: [65, 35], // Percentages
-			userHasVoted: false,
-			userVoteOption: null,
-		},
-		{
-			id: "3",
-			title: "Integration with External DeFi Protocols",
-			description:
-				"Proposal to integrate with major DeFi protocols to expand functionality and liquidity options.",
-			endDate: "2025-06-15T00:00:00Z",
-			votesCount: 98,
-			createdAt: "2025-05-20T00:00:00Z",
-			options: ["Yes", "No", "Abstain"],
-			results: [45, 40, 15], // Percentages
-			userHasVoted: true,
-			userVoteOption: 0,
-		},
-	];
+	// Get user's active votes from the contract
+	const { data: activeVotes, isLoading, error } = useActiveVoteListQuery();
 
 	// Filter votes based on search query
-	const filteredVotes = activeVotes.filter(
-		(vote) =>
-			vote.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-			vote.description.toLowerCase().includes(searchQuery.toLowerCase()),
-	);
+	const filteredVotes = activeVotes
+		? activeVotes.filter(
+				(vote) =>
+					vote.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+					vote.description?.toLowerCase().includes(searchQuery.toLowerCase()),
+			)
+		: [];
 
 	// Sort votes based on selected option
 	const sortedVotes = [...filteredVotes].sort((a, b) => {
 		switch (sortOption) {
 			case "endingSoon":
-				return new Date(a.endDate).getTime() - new Date(b.endDate).getTime();
+				return a.endTime.getTime() - b.endTime.getTime();
 			case "mostVotes":
-				return b.votesCount - a.votesCount;
+				// If we don't have vote count directly, we could use other metrics or default to endpoint
+				return 0; // Will be updated once we have proper data
 			case "newest":
 				return (
-					new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+					new Date(b.createdAt || b.endTime).getTime() -
+					new Date(a.createdAt || a.endTime).getTime()
 				);
 			default:
 				return 0;
@@ -81,13 +55,45 @@ const ActiveVotesPage = () => {
 
 	const handleSearch = (e: React.FormEvent) => {
 		e.preventDefault();
-		setIsLoading(true);
-
-		// Simulate API call
-		setTimeout(() => {
-			setIsLoading(false);
-		}, 800);
+		// Client-side search doesn't need a loading state
 	};
+
+	if (!isConnected) {
+		return (
+			<div className="container mx-auto px-4 py-6">
+				<Alert className="mb-6">
+					<AlertCircle className="h-4 w-4" />
+					<AlertTitle>Wallet not connected</AlertTitle>
+					<AlertDescription>
+						Connect your wallet to see your active votes.
+					</AlertDescription>
+				</Alert>
+			</div>
+		);
+	}
+
+	if (error) {
+		return (
+			<div className="container mx-auto px-4 py-6">
+				<Alert variant="destructive" className="mb-6">
+					<AlertCircle className="h-4 w-4" />
+					<AlertTitle>Error loading votes</AlertTitle>
+					<AlertDescription>
+						{error instanceof Error
+							? error.message
+							: "Failed to load your votes"}
+					</AlertDescription>
+				</Alert>
+				<Button
+					variant="outline"
+					onClick={() => window.location.reload()}
+					className="mt-4"
+				>
+					Retry
+				</Button>
+			</div>
+		);
+	}
 
 	return (
 		<div className="container mx-auto px-4 py-6">
@@ -144,41 +150,84 @@ const ActiveVotesPage = () => {
 
 			{/* Results */}
 			<div className="mb-4 text-sm text-slate-400">
-				{filteredVotes.length} active vote
-				{filteredVotes.length !== 1 ? "s" : ""} found
+				{isLoading ? (
+					"Loading votes..."
+				) : (
+					<>
+						{filteredVotes.length} active vote
+						{filteredVotes.length !== 1 ? "s" : ""} found
+					</>
+				)}
 			</div>
 
-			{/* Tabs for different views */}
-			<Tabs defaultValue="cards">
-				<TabsList className="mb-6">
-					<TabsTrigger value="cards">Cards</TabsTrigger>
-					<TabsTrigger value="list">List View</TabsTrigger>
-				</TabsList>
+			{/* Loading State */}
+			{isLoading ? (
+				<div className="flex flex-col items-center justify-center py-12">
+					<Loader2 className="h-8 w-8 animate-spin text-slate-400 mb-4" />
+					<p className="text-slate-400">Loading your votes...</p>
+				</div>
+			) : (
+				/* Tabs for different views */
+				<Tabs defaultValue="cards">
+					<TabsList className="mb-6">
+						<TabsTrigger value="cards">Cards</TabsTrigger>
+						<TabsTrigger value="list">List View</TabsTrigger>
+					</TabsList>
 
-				<TabsContent value="cards">
-					{sortedVotes.length > 0 ? (
-						<div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-							{sortedVotes.map((vote) => (
-								<VoteCard key={vote.id} vote={vote} />
-							))}
-						</div>
-					) : (
-						<NoActiveVotes />
-					)}
-				</TabsContent>
+					<TabsContent value="cards">
+						{sortedVotes.length > 0 ? (
+							<div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+								{sortedVotes.map((vote) => (
+									<VoteCard
+										key={vote.id}
+										vote={{
+											id: vote.id,
+											title: vote.title,
+											description: vote.description || "",
+											endDate: vote.endTime.toISOString(),
+											votesCount: 0, // We don't have this information directly
+											createdAt: (vote.createdAt || vote.endTime).toISOString(),
+											options: vote.options || [],
+											results: [], // We don't have this information directly
+											userHasVoted: true, // By definition, these are votes the user has cast
+											userVoteOption: vote.optionSelected,
+										}}
+									/>
+								))}
+							</div>
+						) : (
+							<NoActiveVotes />
+						)}
+					</TabsContent>
 
-				<TabsContent value="list">
-					{sortedVotes.length > 0 ? (
-						<div className="space-y-4">
-							{sortedVotes.map((vote) => (
-								<VoteCard key={vote.id} vote={vote} layout="list" />
-							))}
-						</div>
-					) : (
-						<NoActiveVotes />
-					)}
-				</TabsContent>
-			</Tabs>
+					<TabsContent value="list">
+						{sortedVotes.length > 0 ? (
+							<div className="space-y-4">
+								{sortedVotes.map((vote) => (
+									<VoteCard
+										key={vote.id}
+										vote={{
+											id: vote.id,
+											title: vote.title,
+											description: vote.description || "",
+											endDate: vote.endTime.toISOString(),
+											votesCount: 0,
+											createdAt: (vote.createdAt || vote.endTime).toISOString(),
+											options: vote.options || [],
+											results: [],
+											userHasVoted: true,
+											userVoteOption: vote.optionSelected,
+										}}
+										layout="list"
+									/>
+								))}
+							</div>
+						) : (
+							<NoActiveVotes />
+						)}
+					</TabsContent>
+				</Tabs>
+			)}
 		</div>
 	);
 };
