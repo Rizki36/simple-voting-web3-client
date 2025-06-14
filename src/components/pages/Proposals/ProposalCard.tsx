@@ -1,4 +1,3 @@
-import type { Proposal } from "./ProposalsPage";
 import { Button } from "@/components/ui/button";
 import {
 	Card,
@@ -11,15 +10,17 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { formatDistanceToNow } from "date-fns";
 import { Link, type LinkProps } from "@tanstack/react-router";
+import { PROPOSAL_STATUS, type FormattedProposal } from "@/hooks/queries/useProposalListQuery";
+import { fromUnixTimestamp } from "@/lib/date-utils";
 
 type ProposalCardProps = {
-	proposal: Proposal;
+	proposal: FormattedProposal;
 	linkProps?: LinkProps;
 };
 
 const ProposalCard = (props: ProposalCardProps) => {
 	const { proposal, linkProps } = props;
-	const { title, description, status, endDate, votesCount, options, results } =
+	const { title, description, status, endTime, totalVotes, options, votes } =
 		proposal;
 
 	// Format description by truncating
@@ -30,9 +31,16 @@ const ProposalCard = (props: ProposalCardProps) => {
 
 	// Calculate time remaining or time since ended
 	const timeText =
-		status === "active"
-			? `Ends ${formatDistanceToNow(endDate, { addSuffix: true })}`
-			: `Ended ${formatDistanceToNow(endDate, { addSuffix: true })}`;
+		PROPOSAL_STATUS[status] === "active"
+			? `Ends ${formatDistanceToNow(fromUnixTimestamp(endTime), { addSuffix: true })}`
+			: `Ended ${formatDistanceToNow(fromUnixTimestamp(endTime), { addSuffix: true })}`;
+
+	const results =
+		totalVotes > 0
+			? votes.map((vote) =>
+				Number((vote * 100) / totalVotes),
+			)
+			: votes.map(() => 0);
 
 	// Get leading option index
 	const leadingOptionIndex = results.indexOf(Math.max(...results));
@@ -42,9 +50,9 @@ const ProposalCard = (props: ProposalCardProps) => {
 			<CardHeader className="pb-2">
 				<div className="flex justify-between items-start">
 					<Badge
-						className={status === "active" ? "bg-green-700" : "bg-slate-600"}
+						className={PROPOSAL_STATUS[status] === "active" ? "bg-green-700" : "bg-slate-600"}
 					>
-						{status === "active" ? "Active" : "Ended"}
+						{PROPOSAL_STATUS[status] === "active" ? "Active" : "Ended"}
 					</Badge>
 					<div className="text-xs text-slate-400">{timeText}</div>
 				</div>
@@ -71,7 +79,7 @@ const ProposalCard = (props: ProposalCardProps) => {
 			</CardContent>
 
 			<CardFooter className="pt-2 border-t border-slate-800 flex justify-between">
-				<div className="text-xs text-slate-400">{votesCount} votes</div>
+				<div className="text-xs text-slate-400">{totalVotes} votes</div>
 				<Link {...linkProps}>
 					<Button variant="outline" size="sm">
 						View Details

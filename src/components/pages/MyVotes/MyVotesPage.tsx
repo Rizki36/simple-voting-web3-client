@@ -5,9 +5,10 @@ import { Input } from "@/components/ui/input";
 import { Search, AlertCircle, Loader2 } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useAccount } from "wagmi";
-import MyVoteCard from "./MyVoteCard";
+import MyProposalVoteCard from "./MyVoteCard";
 import MyVotesEmptyState from "./MyVotesEmptyState";
-import { useMyVotesQuery } from "@/hooks/useMyVotesQuery";
+import { useMyProposalsVoteQuery } from "@/hooks/queries/useMyProposalsVoteQuery";
+import { PROPOSAL_STATUS } from "@/hooks/queries/useProposalListQuery";
 
 type ProposalStatus = "active" | "ended" | "all";
 
@@ -18,7 +19,12 @@ const MyVotesPage = () => {
 	const { isConnected } = useAccount();
 
 	// Get user's votes from the blockchain
-	const { data: myVotes, isLoading, error } = useMyVotesQuery();
+	const { data: myProposalsVote, isLoading, error } = useMyProposalsVoteQuery();
+	console.log({
+		myProposalsVote,
+		isLoading,
+		error,
+	})
 
 	const itemsPerPage = 5;
 
@@ -28,16 +34,16 @@ const MyVotesPage = () => {
 	};
 
 	// Apply filters to the vote data
-	const filteredVotes = myVotes
-		? myVotes.filter((vote) => {
-				const matchesStatus = filter === "all" || vote.status === filter;
-				const matchesSearch =
-					vote.proposalTitle
-						.toLowerCase()
-						.includes(searchQuery.toLowerCase()) ||
-					vote.proposalId.toLowerCase().includes(searchQuery.toLowerCase());
-				return matchesStatus && matchesSearch;
-			})
+	const filteredVotes = myProposalsVote
+		? myProposalsVote.filter((proposal) => {
+			const matchesStatus = filter === "all" || PROPOSAL_STATUS[proposal.status] === filter;
+			const matchesSearch =
+				proposal.title
+					.toLowerCase()
+					.includes(searchQuery.toLowerCase()) ||
+				String(proposal.id).toLowerCase().includes(searchQuery.toLowerCase());
+			return matchesStatus && matchesSearch;
+		})
 		: [];
 
 	// Paginate results
@@ -142,8 +148,8 @@ const MyVotesPage = () => {
 						<TabsContent value="all" className="mt-0">
 							{paginatedVotes.length > 0 ? (
 								<div className="space-y-4">
-									{paginatedVotes.map((vote) => (
-										<MyVoteCard key={vote.id} vote={vote} />
+									{paginatedVotes.map((proposalVote) => (
+										<MyProposalVoteCard key={proposalVote.id} proposalVote={proposalVote} />
 									))}
 								</div>
 							) : (
@@ -155,7 +161,7 @@ const MyVotesPage = () => {
 							{paginatedVotes.length > 0 ? (
 								<div className="space-y-4">
 									{paginatedVotes.map((vote) => (
-										<MyVoteCard key={vote.id} vote={vote} />
+										<MyProposalVoteCard key={vote.id} proposalVote={vote} />
 									))}
 								</div>
 							) : (
@@ -166,8 +172,8 @@ const MyVotesPage = () => {
 						<TabsContent value="ended" className="mt-0">
 							{paginatedVotes.length > 0 ? (
 								<div className="space-y-4">
-									{paginatedVotes.map((vote) => (
-										<MyVoteCard key={vote.id} vote={vote} />
+									{paginatedVotes.map((proposalVote) => (
+										<MyProposalVoteCard key={proposalVote.id} proposalVote={proposalVote} />
 									))}
 								</div>
 							) : (

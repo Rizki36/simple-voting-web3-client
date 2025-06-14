@@ -17,7 +17,7 @@ import VotingActivity from "./VotingActivity";
 import StatCards from "./StatCards";
 
 const DashboardPage = () => {
-	const [selectedProposalId, setSelectedProposalId] = useState<string | null>(
+	const [selectedProposalId, setSelectedProposalId] = useState<number | null>(
 		null,
 	);
 	const { isConnected } = useAccount();
@@ -38,6 +38,7 @@ const DashboardPage = () => {
 			</div>
 		);
 	}
+
 
 	return (
 		<div className="container mx-auto px-4 py-6">

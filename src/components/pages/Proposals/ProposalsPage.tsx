@@ -21,7 +21,8 @@ import ProposalListSkeleton from "./ProposalListSkeleton";
 import ProposalCard from "./ProposalCard";
 import { useAccount } from "wagmi";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import useProposalsQuery from "@/hooks/useProposalListQuery";
+import useProposalListQuery, { PROPOSAL_STATUS } from "@/hooks/queries/useProposalListQuery";
+import { fromUnixTimestamp } from "@/lib/date-utils";
 
 type ProposalStatus = "active" | "ended" | "all";
 type SortOption = "newest" | "oldest" | "endingSoon" | "mostVotes";
@@ -48,49 +49,49 @@ const useProposalList = ({
 	searchQuery?: string;
 	sortOption?: SortOption;
 }) => {
-	const { data: proposals, isLoading, error } = useProposalsQuery();
+	const { data: proposals, isLoading, error } = useProposalListQuery({});
 
 	// Apply filters and sorting to the proposals
 	const filteredAndSortedProposals = proposals
 		? proposals
-				.filter((proposal) => {
-					// Apply status filter
-					if (statusFilter !== "all" && proposal.status !== statusFilter) {
-						return false;
-					}
+			.filter((proposal) => {
+				// Apply status filter
+				if (statusFilter !== "all" && PROPOSAL_STATUS[proposal.status] !== statusFilter) {
+					return false;
+				}
 
-					// Apply search filter (case insensitive)
-					if (searchQuery) {
-						const query = searchQuery.toLowerCase();
-						return (
-							proposal.title.toLowerCase().includes(query) ||
-							proposal.description.toLowerCase().includes(query)
-						);
-					}
+				// Apply search filter (case insensitive)
+				if (searchQuery) {
+					const query = searchQuery.toLowerCase();
+					return (
+						proposal.title.toLowerCase().includes(query) ||
+						proposal.description.toLowerCase().includes(query)
+					);
+				}
 
-					return true;
-				})
-				.sort((a, b) => {
-					// Apply sorting
-					switch (sortOption) {
-						case "newest":
-							return b.createdAt.getTime() - a.createdAt.getTime();
-						case "oldest":
-							return a.createdAt.getTime() - b.createdAt.getTime();
-						case "endingSoon":
-							// Sort by time remaining (for active proposals first, then ended)
-							if (a.status === "active" && b.status === "ended") return -1;
-							if (a.status === "ended" && b.status === "active") return 1;
-							if (a.status === "active" && b.status === "active") {
-								return a.endDate.getTime() - b.endDate.getTime();
-							}
-							return 0;
-						case "mostVotes":
-							return b.votesCount - a.votesCount;
-						default:
-							return 0;
-					}
-				})
+				return true;
+			})
+			.sort((a, b) => {
+				// Apply sorting
+				switch (sortOption) {
+					// case "newest":
+					// 	return b.createdAt.getTime() - a.createdAt.getTime();
+					// case "oldest":
+					// 	return a.createdAt.getTime() - b.createdAt.getTime();
+					case "endingSoon":
+						// Sort by time remaining (for active proposals first, then ended)
+						if (PROPOSAL_STATUS[a.status] === "active" && PROPOSAL_STATUS[b.status] === "ended") return -1;
+						if (PROPOSAL_STATUS[a.status] === "ended" && PROPOSAL_STATUS[b.status] === "active") return 1;
+						if (PROPOSAL_STATUS[a.status] === "active" && PROPOSAL_STATUS[b.status] === "active") {
+							return fromUnixTimestamp(a.endTime).getTime() - fromUnixTimestamp(b.endTime).getTime();
+						}
+						return 0;
+					case "mostVotes":
+						return Number(b.totalVotes) - Number(a.totalVotes);
+					default:
+						return 0;
+				}
+			})
 		: [];
 
 	return {
@@ -248,7 +249,7 @@ const ProposalsPage = () => {
 							proposal={proposal}
 							linkProps={{
 								to: "/proposals/$proposalId",
-								params: { proposalId: proposal.id },
+								params: { proposalId: Number(proposal.id).toString() },
 							}}
 						/>
 					))}

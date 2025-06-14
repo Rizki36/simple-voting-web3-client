@@ -14,7 +14,9 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import VoteCard from "./VoteCard";
 import NoActiveVotes from "./NoActiveVotes";
 import { useAccount } from "wagmi";
-import useActiveVoteListQuery from "@/hooks/useActiveVoteListQuery";
+import { useMyProposalsVoteQuery } from "@/hooks/queries/useMyProposalsVoteQuery";
+import { PROPOSAL_STATUS } from "@/hooks/queries/useProposalListQuery";
+import { fromUnixTimestamp } from "@/lib/date-utils";
 
 type SortOption = "endingSoon" | "mostVotes" | "newest";
 
@@ -24,30 +26,33 @@ const ActiveVotesPage = () => {
 	const { isConnected } = useAccount();
 
 	// Get user's active votes from the contract
-	const { data: activeVotes, isLoading, error } = useActiveVoteListQuery();
+	const { data: myProposalsVote = [], isLoading, error } = useMyProposalsVoteQuery();
+	const activeVotes = myProposalsVote.filter(
+		(vote) => PROPOSAL_STATUS[vote.status] === "active",
+	)
 
 	// Filter votes based on search query
 	const filteredVotes = activeVotes
 		? activeVotes.filter(
-				(vote) =>
-					vote.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-					vote.description?.toLowerCase().includes(searchQuery.toLowerCase()),
-			)
+			(vote) =>
+				vote.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+				vote.description?.toLowerCase().includes(searchQuery.toLowerCase()),
+		)
 		: [];
 
 	// Sort votes based on selected option
-	const sortedVotes = [...filteredVotes].sort((a, b) => {
+	const sortedProposalsVote = [...filteredVotes].sort((a, b) => {
 		switch (sortOption) {
 			case "endingSoon":
-				return a.endTime.getTime() - b.endTime.getTime();
+				return fromUnixTimestamp(a.endTime).getTime() - fromUnixTimestamp(b.endTime).getTime();
 			case "mostVotes":
 				// If we don't have vote count directly, we could use other metrics or default to endpoint
 				return 0; // Will be updated once we have proper data
-			case "newest":
-				return (
-					new Date(b.createdAt || b.endTime).getTime() -
-					new Date(a.createdAt || a.endTime).getTime()
-				);
+			// case "newest":
+			// 	return (
+			// 		new Date(b.createdAt || b.endTime).getTime() -
+			// 		new Date(a.createdAt || a.endTime).getTime()
+			// 	);
 			default:
 				return 0;
 		}
@@ -175,23 +180,12 @@ const ActiveVotesPage = () => {
 					</TabsList>
 
 					<TabsContent value="cards">
-						{sortedVotes.length > 0 ? (
+						{sortedProposalsVote.length > 0 ? (
 							<div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-								{sortedVotes.map((vote) => (
+								{sortedProposalsVote.map((proposalVote) => (
 									<VoteCard
-										key={vote.id}
-										vote={{
-											id: vote.id,
-											title: vote.title,
-											description: vote.description || "",
-											endDate: vote.endTime.toISOString(),
-											votesCount: 0, // We don't have this information directly
-											createdAt: (vote.createdAt || vote.endTime).toISOString(),
-											options: vote.options || [],
-											results: [], // We don't have this information directly
-											userHasVoted: true, // By definition, these are votes the user has cast
-											userVoteOption: vote.optionSelected,
-										}}
+										key={proposalVote.id}
+										proposalVote={proposalVote}
 									/>
 								))}
 							</div>
@@ -201,23 +195,12 @@ const ActiveVotesPage = () => {
 					</TabsContent>
 
 					<TabsContent value="list">
-						{sortedVotes.length > 0 ? (
+						{sortedProposalsVote.length > 0 ? (
 							<div className="space-y-4">
-								{sortedVotes.map((vote) => (
+								{sortedProposalsVote.map((proposalVote) => (
 									<VoteCard
-										key={vote.id}
-										vote={{
-											id: vote.id,
-											title: vote.title,
-											description: vote.description || "",
-											endDate: vote.endTime.toISOString(),
-											votesCount: 0,
-											createdAt: (vote.createdAt || vote.endTime).toISOString(),
-											options: vote.options || [],
-											results: [],
-											userHasVoted: true,
-											userVoteOption: vote.optionSelected,
-										}}
+										key={proposalVote.id}
+										proposalVote={proposalVote}
 										layout="list"
 									/>
 								))}

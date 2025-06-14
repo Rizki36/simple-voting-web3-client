@@ -5,35 +5,49 @@ import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { useNavigate } from "@tanstack/react-router";
-import type { MyVote } from "@/hooks/useMyVotesQuery";
+import type { MyProposalVoteQueryData } from "@/hooks/queries/useMyProposalsVoteQuery";
+import { PROPOSAL_STATUS } from "@/hooks/queries/useProposalListQuery";
 
-interface MyVoteCardProps {
-	vote: MyVote;
+type MyProposalVoteCardProps = {
+	proposalVote: MyProposalVoteQueryData;
 }
 
-const MyVoteCard = ({ vote }: MyVoteCardProps) => {
+const MyProposalVoteCard = ({ proposalVote }: MyProposalVoteCardProps) => {
 	const navigate = useNavigate();
 	const {
-		proposalId,
-		proposalTitle,
-		optionVoted,
-		votedAt,
+		id: proposalId,
+		title: proposalTitle,
+		// votedAt,
+		endTime,
 		status,
-		endDate,
-		results,
-	} = vote;
+		options,
+		chosenOption,
+		totalVotes,
+		votes
+	} = proposalVote;
+
+	const results =
+		totalVotes > 0
+			? votes.map((vote) =>
+				Number((vote * 100) / totalVotes),
+			)
+			: votes.map(() => 0);
+
+	const optionVoted = options[Number(chosenOption)] || "Unknown Option";
 
 	// Format dates for display
-	const voteDateFormatted = formatDistanceToNow(new Date(votedAt), {
-		addSuffix: true,
-	});
-	const endDateFormatted = formatDistanceToNow(new Date(endDate), {
+	// const voteDateFormatted = formatDistanceToNow(new Date(votedAt), {
+	// 	addSuffix: true,
+	// });
+	const endDateFormatted = formatDistanceToNow(new Date(
+		Number(endTime) * 1000
+	), {
 		addSuffix: true,
 	});
 
 	// Find the top option by percentage
 	const maxPercentage = Math.max(...results);
-	const isWinning = results[vote.optionIndex] === maxPercentage;
+	const isWinning = results[Number(chosenOption)] === maxPercentage;
 
 	// View the proposal details
 	const handleViewProposal = () => {
@@ -49,12 +63,11 @@ const MyVoteCard = ({ vote }: MyVoteCardProps) => {
 							<div>
 								<Badge
 									variant="secondary"
-									className={`mb-2 ${
-										status === "active" ? "bg-green-900/30" : "bg-slate-800"
-									}`}
+									className={`mb-2 ${PROPOSAL_STATUS[status] === "active" ? "bg-green-900/30" : "bg-slate-800"
+										}`}
 								>
 									Proposal #{proposalId} -{" "}
-									{status === "active" ? "Active" : "Ended"}
+									{PROPOSAL_STATUS[status] === "active" ? "Active" : "Ended"}
 								</Badge>
 								<h3 className="text-lg font-semibold">{proposalTitle}</h3>
 							</div>
@@ -65,7 +78,7 @@ const MyVoteCard = ({ vote }: MyVoteCardProps) => {
 								<p className="text-xs text-slate-400 mb-1">You voted</p>
 								<p className="text-sm font-medium">
 									{optionVoted}{" "}
-									{isWinning && status === "ended" && (
+									{isWinning && PROPOSAL_STATUS[status] === "ended" && (
 										<Badge className="ml-1 bg-blue-900/30">
 											Currently winning
 										</Badge>
@@ -74,24 +87,24 @@ const MyVoteCard = ({ vote }: MyVoteCardProps) => {
 							</div>
 							<div>
 								<p className="text-xs text-slate-400 mb-1">
-									{status === "active" ? "Voting ends" : "Voting ended"}
+									{PROPOSAL_STATUS[status] === "active" ? "Voting ends" : "Voting ended"}
 								</p>
 								<p className="text-sm">{endDateFormatted}</p>
 							</div>
 							<div>
 								<p className="text-xs text-slate-400 mb-1">Your vote cast</p>
-								<p className="text-sm">{voteDateFormatted}</p>
+								{/* <p className="text-sm">{voteDateFormatted}</p> */}
 							</div>
 							<div>
 								<p className="text-xs text-slate-400 mb-1">
 									{optionVoted} has{" "}
 									<span className="font-medium">
-										{results[vote.optionIndex]}%
+										{results[Number(chosenOption)]}%
 									</span>{" "}
 									of votes
 								</p>
 								<Progress
-									value={results[vote.optionIndex]}
+									value={results[Number(chosenOption)]}
 									className="h-1.5 mt-1"
 								/>
 							</div>
@@ -112,4 +125,4 @@ const MyVoteCard = ({ vote }: MyVoteCardProps) => {
 	);
 };
 
-export default MyVoteCard;
+export default MyProposalVoteCard;

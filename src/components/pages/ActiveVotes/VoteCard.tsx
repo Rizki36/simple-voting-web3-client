@@ -19,20 +19,11 @@ import {
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
 import ShareDialog from "./ShareDialog";
+import type { MyProposalVoteQueryData } from "@/hooks/queries/useMyProposalsVoteQuery";
+import { fromUnixTimestamp } from "@/lib/date-utils";
 
 type VoteCardProps = {
-	vote: {
-		id: string;
-		title: string;
-		description: string;
-		endDate: string;
-		votesCount: number;
-		createdAt: string;
-		options: string[];
-		results: number[];
-		userHasVoted: boolean;
-		userVoteOption: number | null;
-	};
+	proposalVote: MyProposalVoteQueryData
 	layout?: "card" | "list";
 };
 
@@ -55,12 +46,12 @@ type CustomTooltipProps = {
 	label?: string;
 };
 
-const VoteCard = ({ vote, layout = "card" }: VoteCardProps) => {
+const VoteCard = ({ proposalVote, layout = "card" }: VoteCardProps) => {
 	const [showShareDialog, setShowShareDialog] = useState(false);
 
 	// Calculate remaining time for active votes
 	const getRemainingTime = () => {
-		const endDate = new Date(vote.endDate);
+		const endDate = fromUnixTimestamp(proposalVote.endTime)
 		const now = new Date();
 		const diffTime = Math.max(0, endDate.getTime() - now.getTime());
 		const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
@@ -74,12 +65,19 @@ const VoteCard = ({ vote, layout = "card" }: VoteCardProps) => {
 		return `${diffHours}h remaining`;
 	};
 
+	const results =
+		proposalVote.totalVotes > 0
+			? proposalVote.votes.map((vote) =>
+				Number((vote * 100) / proposalVote.totalVotes),
+			)
+			: proposalVote.votes.map(() => 0);
+
 	// Format data for Recharts
-	const chartData = vote.options.map((option, i) => ({
+	const chartData = proposalVote.options.map((option, i) => ({
 		name: option,
-		value: vote.results[i],
+		value: results[i],
 		fill: getBarColor(i),
-		userVote: i === vote.userVoteOption,
+		userVote: i === Number(proposalVote.chosenOption),
 	}));
 
 	// Get color for chart bars
@@ -133,10 +131,10 @@ const VoteCard = ({ vote, layout = "card" }: VoteCardProps) => {
 					</TooltipProvider>
 				</div>
 
-				<h3 className="text-lg font-medium mb-2">{vote.title}</h3>
+				<h3 className="text-lg font-medium mb-2">{proposalVote.title}</h3>
 
 				<p className="text-sm text-slate-300 mb-4 line-clamp-2">
-					{vote.description}
+					{proposalVote.description}
 				</p>
 
 				{/* Votes chart */}
@@ -171,22 +169,22 @@ const VoteCard = ({ vote, layout = "card" }: VoteCardProps) => {
 				</div>
 
 				{/* User vote status */}
-				{vote.userHasVoted && (
+				{proposalVote.hasVoted && (
 					<div className="bg-green-900/20 text-green-400 px-3 py-2 rounded-md mb-4 flex items-center text-sm">
 						<Check className="h-4 w-4 mr-2" />
-						You voted: {vote.options[vote.userVoteOption!]}
+						You voted: {proposalVote.options[Number(proposalVote.chosenOption)]}
 					</div>
 				)}
 
 				<div className="flex justify-between items-center mt-auto pt-3 border-t border-slate-700 text-xs text-slate-400">
 					<div className="flex items-center">
 						<Users className="h-3 w-3 mr-1" />
-						{vote.votesCount} participants
+						{proposalVote.totalVotes} participants
 					</div>
 
 					<Link
 						to="/proposals/$proposalId"
-						params={{ proposalId: vote.id }}
+						params={{ proposalId: Number(proposalVote.id).toString() }}
 						className="flex items-center hover:text-blue-400"
 					>
 						View Details
@@ -197,8 +195,8 @@ const VoteCard = ({ vote, layout = "card" }: VoteCardProps) => {
 				<ShareDialog
 					open={showShareDialog}
 					onOpenChange={setShowShareDialog}
-					title={vote.title}
-					id={vote.id}
+					title={proposalVote.title}
+					id={Number(proposalVote.id).toString()}
 				/>
 			</div>
 		);
@@ -233,15 +231,15 @@ const VoteCard = ({ vote, layout = "card" }: VoteCardProps) => {
 						</TooltipProvider>
 					</div>
 
-					<h3 className="text-lg font-medium mb-2">{vote.title}</h3>
+					<h3 className="text-lg font-medium mb-2">{proposalVote.title}</h3>
 
-					<p className="text-sm text-slate-300 mb-4">{vote.description}</p>
+					<p className="text-sm text-slate-300 mb-4">{proposalVote.description}</p>
 
 					{/* User vote status */}
-					{vote.userHasVoted && (
+					{proposalVote.hasVoted && (
 						<div className="bg-green-900/20 text-green-400 px-3 py-2 rounded-md mb-4 flex items-center text-sm">
 							<Check className="h-4 w-4 mr-2" />
-							You voted: {vote.options[vote.userVoteOption!]}
+							You voted: {proposalVote.options[Number(proposalVote.chosenOption)]}
 						</div>
 					)}
 				</div>
@@ -249,19 +247,19 @@ const VoteCard = ({ vote, layout = "card" }: VoteCardProps) => {
 				<div className="md:w-3/5">
 					{/* Progress bars for list view */}
 					<div className="space-y-3">
-						{vote.options.map((option, i) => (
+						{proposalVote.options.map((option, i) => (
 							<div key={i} className="space-y-1">
 								<div className="flex justify-between text-sm">
 									<span className="flex items-center">
 										{option}
-										{i === vote.userVoteOption && (
+										{i === Number(proposalVote.chosenOption) && (
 											<Check className="h-4 w-4 text-green-400 ml-1" />
 										)}
 									</span>
-									<span>{vote.results[i]}%</span>
+									<span>{results[i]}%</span>
 								</div>
 								<Progress
-									value={vote.results[i]}
+									value={results[i]}
 									className="h-2"
 									style={
 										{
@@ -276,12 +274,12 @@ const VoteCard = ({ vote, layout = "card" }: VoteCardProps) => {
 					<div className="flex justify-between items-center mt-4 pt-3 border-t border-slate-700 text-xs text-slate-400">
 						<div className="flex items-center">
 							<Users className="h-3 w-3 mr-1" />
-							{vote.votesCount} participants
+							{proposalVote.totalVotes} participants
 						</div>
 
 						<Link
 							to="/proposals/$proposalId"
-							params={{ proposalId: vote.id }}
+							params={{ proposalId: Number(proposalVote.id).toString() }}
 							className="flex items-center hover:text-blue-400"
 						>
 							View Details
@@ -294,8 +292,8 @@ const VoteCard = ({ vote, layout = "card" }: VoteCardProps) => {
 			<ShareDialog
 				open={showShareDialog}
 				onOpenChange={setShowShareDialog}
-				title={vote.title}
-				id={vote.id}
+				title={proposalVote.title}
+				id={Number(proposalVote.id).toString()}
 			/>
 		</div>
 	);

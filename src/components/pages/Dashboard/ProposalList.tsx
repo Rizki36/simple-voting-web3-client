@@ -6,11 +6,11 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ArrowRight } from "lucide-react";
 import { useNavigate } from "@tanstack/react-router";
-import useProposalsQuery from "@/hooks/useProposalListQuery";
+import useProposalListQuery, { PROPOSAL_STATUS } from "@/hooks/queries/useProposalListQuery";
 
 type ProposalListProps = {
 	filter: "active" | "recent" | "voted";
-	onSelectProposal: (id: string) => void;
+	onSelectProposal: (id: number) => void;
 };
 
 const ProposalList = ({ filter, onSelectProposal }: ProposalListProps) => {
@@ -18,25 +18,25 @@ const ProposalList = ({ filter, onSelectProposal }: ProposalListProps) => {
 	const { address } = useAccount();
 	const [viewAll, setViewAll] = useState(false);
 
-	const { data: proposals, isLoading } = useProposalsQuery();
+	const { data: proposals, isLoading } = useProposalListQuery({});
 
 	// Apply filter to proposals
 	const filteredProposals = proposals
 		? proposals
-				.filter((proposal) => {
-					if (filter === "active") return proposal.status === "active";
-					if (filter === "voted" && address) {
-						// This would need a way to track user votes
-						// For now, just show the most recent proposals
-						return true;
-					}
-					return true; // "recent" shows all
-				})
-				.sort((a, b) => {
-					// Most recent first
-					return b.createdAt.getTime() - a.createdAt.getTime();
-				})
-				.slice(0, viewAll ? undefined : 5) // Limit unless viewAll is true
+			.filter((proposal) => {
+				if (filter === "active") return PROPOSAL_STATUS[proposal.status] === "active";
+				if (filter === "voted" && address) {
+					// This would need a way to track user votes
+					// For now, just show the most recent proposals
+					return true;
+				}
+				return true; // "recent" shows all
+			})
+			// .sort((a, b) => {
+			// 	// Most recent first
+			// 	return b.createdAt.getTime() - a.createdAt.getTime();
+			// })
+			.slice(0, viewAll ? undefined : 5) // Limit unless viewAll is true
 		: [];
 
 	if (isLoading) {
@@ -71,21 +71,25 @@ const ProposalList = ({ filter, onSelectProposal }: ProposalListProps) => {
 						<div>
 							<h3 className="font-medium">{proposal.title}</h3>
 							<p className="text-xs text-slate-400">
-								{proposal.status === "active"
-									? `Ends ${formatDistanceToNow(proposal.endDate, { addSuffix: true })}`
-									: `Ended ${formatDistanceToNow(proposal.endDate, { addSuffix: true })}`}
+								{PROPOSAL_STATUS[proposal.status] === "active"
+									? `Ends ${formatDistanceToNow(new Date(
+										Number(proposal.endTime) * 1000
+									), { addSuffix: true })}`
+									: `Ended ${formatDistanceToNow(new Date(
+										Number(proposal.endTime) * 1000
+									), { addSuffix: true })}`}
 							</p>
 						</div>
 						<Badge
 							className={
-								proposal.status === "active" ? "bg-green-700" : "bg-slate-600"
+								PROPOSAL_STATUS[proposal.status] === "active" ? "bg-green-700" : "bg-slate-600"
 							}
 						>
-							{proposal.status === "active" ? "Active" : "Ended"}
+							{PROPOSAL_STATUS[proposal.status] === "active" ? "Active" : "Ended"}
 						</Badge>
 					</div>
 					<div className="flex justify-between items-center mt-2 text-xs text-slate-400">
-						<span>{proposal.votesCount} votes</span>
+						<span>{proposal.totalVotes} votes</span>
 						<Button
 							variant="link"
 							size="sm"

@@ -11,7 +11,9 @@ import {
 } from "lucide-react";
 import ActiveVoteItem from "./ActiveVoteItem";
 import { useAccount } from "wagmi";
-import useActiveVoteListQuery from "@/hooks/useActiveVoteListQuery";
+import { useMyProposalsVoteQuery } from "@/hooks/queries/useMyProposalsVoteQuery";
+import { fromUnixTimestamp } from "@/lib/date-utils";
+import { PROPOSAL_STATUS } from "@/hooks/queries/useProposalListQuery";
 
 type SidebarItemType = {
 	icon: LucideIcon;
@@ -23,7 +25,9 @@ type SidebarItemType = {
 
 const Sidebar = () => {
 	const { isConnected } = useAccount();
-	const { data: activeVotes = [], isLoading } = useActiveVoteListQuery();
+	const { data: myProposals = [], isLoading } = useMyProposalsVoteQuery();
+	const activeProposalsVote = myProposals.filter
+		((proposal) => PROPOSAL_STATUS[proposal.status] === "active");
 	const currentPath = useRouterState({
 		select: (state) => state.location.pathname,
 	});
@@ -55,7 +59,7 @@ const Sidebar = () => {
 			label: "Active Votes",
 			path: "/active-votes",
 			badge:
-				activeVotes?.length > 0 ? activeVotes.length.toString() : undefined,
+				activeProposalsVote?.length > 0 ? activeProposalsVote.length.toString() : undefined,
 			badgeType: "Count",
 		},
 	];
@@ -113,30 +117,32 @@ const Sidebar = () => {
 					<div className="flex justify-center items-center py-4">
 						<Loader2 className="h-4 w-4 animate-spin text-slate-400" />
 					</div>
-				) : activeVotes.length === 0 ? (
+				) : activeProposalsVote.length === 0 ? (
 					<div className="text-xs text-slate-500 text-center py-2">
 						No active votes found
 					</div>
 				) : (
-					activeVotes
+					activeProposalsVote
 						.slice(0, 3)
-						.map((vote) => (
+						.map((proposalVote) => (
 							<ActiveVoteItem
-								key={vote.id}
-								id={vote.id}
-								title={vote.title}
-								optionText={vote.optionText}
-								endTime={vote.endTime}
+								key={proposalVote.id}
+								id={Number(proposalVote.id).toString()}
+								title={proposalVote.title}
+								optionText={proposalVote.options[Number(proposalVote.chosenOption)]}
+								endTime={fromUnixTimestamp(
+									proposalVote.endTime
+								)}
 							/>
 						))
 				)}
 
-				{activeVotes.length > 3 && (
+				{activeProposalsVote.length > 3 && (
 					<Link
 						to="/my-votes"
 						className="text-xs text-blue-400 hover:text-blue-300 block text-center mt-2"
 					>
-						View all ({activeVotes.length})
+						View all ({activeProposalsVote.length})
 					</Link>
 				)}
 			</div>

@@ -1,4 +1,4 @@
-import { useReadContracts } from "wagmi";
+import { useReadContract } from "wagmi";
 import { formatDistanceToNow } from "date-fns";
 import { smartContractAddress, smartContractABI } from "@/constants/abi";
 import { Progress } from "@/components/ui/progress";
@@ -6,31 +6,23 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { fromUnixTimestamp } from "@/lib/date-utils";
 import { useNavigate } from "@tanstack/react-router";
+import { formatProposal, PROPOSAL_STATUS } from "@/hooks/queries/useProposalListQuery";
 
 interface ProposalSummaryProps {
-	proposalId: string | null;
+	proposalId: number | null;
 }
 
 const ProposalSummary = ({ proposalId }: ProposalSummaryProps) => {
 	const navigate = useNavigate();
 
-	const { data, isLoading } = useReadContracts({
-		contracts: proposalId
-			? [
-					{
-						address: smartContractAddress as `0x${string}`,
-						abi: smartContractABI,
-						functionName: "getProposal",
-						args: [BigInt(proposalId)],
-					},
-					{
-						address: smartContractAddress as `0x${string}`,
-						abi: smartContractABI,
-						functionName: "getProposalResults",
-						args: [BigInt(proposalId)],
-					},
-				]
-			: [],
+	const { data, isLoading } = useReadContract({
+		address: smartContractAddress as `0x${string}`,
+		abi: smartContractABI,
+		functionName: "getFullProposal",
+		args: [BigInt(proposalId || 0)],
+		query: {
+			enabled: !!proposalId,
+		}
 	});
 
 	if (!proposalId) {
@@ -51,7 +43,7 @@ const ProposalSummary = ({ proposalId }: ProposalSummaryProps) => {
 		);
 	}
 
-	if (!data || !data[0] || !data[1]) {
+	if (!data) {
 		return (
 			<div className="text-center py-6 text-slate-400">
 				Could not load proposal details
@@ -59,26 +51,15 @@ const ProposalSummary = ({ proposalId }: ProposalSummaryProps) => {
 		);
 	}
 
-	const proposalData = data[0].result as [
-		bigint,
-		string,
-		string,
-		bigint,
-		`0x${string}`,
-		number,
-		bigint,
-	];
-	const resultsData = data[1].result as [string[], bigint[], bigint, number];
-
-	const [_id, title, description, endTime, _creator, status, _totalVotes] =
-		proposalData;
-	const [options, votes, totalVoteCount, _proposalStatus] = resultsData;
+	const formattedProposal = formatProposal([...data])
+	const { title, description, options, totalVotes, votes, endTime, status } = formattedProposal;
 
 	const endTimeDate = fromUnixTimestamp(endTime);
-	const isActive = status === 0;
+	const isActive = PROPOSAL_STATUS[status] === "active";
+
 
 	// Find the winning option
-	let highestVotes = 0n;
+	let highestVotes = 0;
 	let winningOptionIndex = 0;
 
 	for (let i = 0; i < votes.length; i++) {
@@ -108,8 +89,8 @@ const ProposalSummary = ({ proposalId }: ProposalSummaryProps) => {
 				{options.map((option, i) => {
 					const voteCount = Number(votes[i]);
 					const percentage =
-						totalVoteCount > 0n
-							? Number((votes[i] * 100n) / totalVoteCount)
+						totalVotes > 0
+							? Number((votes[i] * 100) / totalVotes)
 							: 0;
 
 					return (
